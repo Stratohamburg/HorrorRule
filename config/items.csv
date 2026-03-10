@@ -1,0 +1,11 @@
+ID,Name,Type,Max_Stack,Effect_Type,Effect_Value,Description
+I001,手电筒,KeyItem,1,Light_Source,100,提供扇形照明，消耗电量，电量耗尽后失效。
+I002,备用电池,Consumable,5,Restore_Battery,50,为手电筒恢复50%的电量。
+I003,镇定药片,Consumable,5,Restore_SAN,15,吞下后能稍微平复情绪，恢复15点理智值。
+I004,火柴,Consumable,10,Light_Source,30,一次性光源，点燃后提供微弱的圆形照明，持续30秒。
+I005,教务处备用钥匙,KeyItem,1,Unlock_Door,0,用于打开一楼被锁死的大门。
+I006,特制鱼饵,KeyItem,1,Trigger_Event,0,散发着腥臭味的肉块，可以用来安抚无氧潜水员。
+I007,水泵室钥匙,KeyItem,1,Unlock_Door,0,无氧潜水员给的钥匙，用于进入水泵控制室。
+I008,红皮书,KeyItem,1,Trigger_Event,0,一本没有字的书，可以用来扑灭幽灵火灾。
+I009,生锈的钥匙,KeyItem,1,Unlock_Door,0,前任房客掉落，用于打开阳台的暗格。
+I010,房屋转让契约,KeyItem,1,Trigger_Event,0,被诅咒的源头，在厨房烧毁后可解除404号房的封锁。

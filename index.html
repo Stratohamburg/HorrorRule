@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>恐怖规则 Horror Rule</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Courier New',monospace;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+canvas{display:block;margin:0 auto;image-rendering:pixelated;}
+#ui-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;}
+#ui-layer *{pointer-events:auto;}
+.hidden{display:none!important;}
+
+/* ===== 主菜单 ===== */
+.menu-screen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.95);z-index:100;padding:20px;}
+.menu-title{color:#8b0000;font-size:clamp(28px,8vw,48px);text-shadow:0 0 20px #8b0000,0 0 40px #550000;margin-bottom:clamp(30px,8vh,60px);letter-spacing:8px;animation:glitch 3s infinite;}
+@keyframes glitch{0%,90%,100%{opacity:1;transform:translate(0);}92%{opacity:0.8;transform:translate(-3px,1px);}94%{opacity:0.6;transform:translate(3px,-1px);}96%{opacity:0.9;transform:translate(-1px,2px);}98%{opacity:0.7;transform:translate(2px,-2px);}}
+.menu-btn{background:none;border:1px solid #333;color:#aaa;font-size:clamp(16px,4vw,20px);padding:clamp(10px,2.5vw,12px) clamp(30px,8vw,48px);margin:8px;cursor:pointer;font-family:inherit;letter-spacing:4px;transition:all 0.3s;min-width:clamp(180px,60vw,240px);text-align:center;}
+.menu-btn:hover,.menu-btn:active{color:#8b0000;border-color:#8b0000;text-shadow:0 0 10px #8b0000;}
+.menu-btn:disabled{color:#333;border-color:#222;cursor:not-allowed;}
+.menu-hint{color:#333;font-size:clamp(9px,2.5vw,11px);margin-top:clamp(20px,5vh,40px);text-align:center;line-height:1.8;padding:0 10px;}
+
+/* ===== 关卡选择 ===== */
+.level-select-list{display:flex;flex-direction:column;align-items:center;width:100%;max-width:340px;gap:12px;padding:0 15px;}
+.level-card{display:block;width:100%;padding:clamp(12px,3vw,18px);border:1px solid #333;text-align:center;cursor:pointer;transition:all 0.3s;}
+.level-card:hover,.level-card:active{border-color:#8b0000;box-shadow:0 0 15px rgba(139,0,0,0.3);}
+.level-card.locked{opacity:0.4;cursor:not-allowed;}
+.level-card h3{color:#ccc;font-size:clamp(13px,3.5vw,16px);margin-bottom:6px;}
+.level-card p{color:#666;font-size:clamp(10px,2.8vw,12px);}
+
+/* ===== HUD顶部 ===== */
+.hud-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;padding:env(safe-area-inset-top,8px) 8px 0 8px;}
+.hud-left,.hud-right{pointer-events:auto;}
+.hud-btn{background:rgba(0,0,0,0.6);border:1px solid #555;color:#aaa;width:clamp(36px,10vw,44px);height:clamp(36px,10vw,44px);font-size:clamp(16px,4.5vw,20px);cursor:pointer;margin:2px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;}
+.hud-btn:active{border-color:#8b0000;color:#ddd;background:rgba(60,0,0,0.5);}
+.san-display{color:#7fcc7f;font-size:clamp(12px,3.2vw,14px);background:rgba(0,0,0,0.7);padding:4px 10px;border:1px solid #3a5a3a;display:inline-block;border-radius:4px;}
+.san-display.warning{color:#cc7f7f;border-color:#5a3a3a;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.stamina-bar{width:clamp(80px,25vw,120px);height:6px;background:#222;margin-top:4px;border:1px solid #333;border-radius:3px;}
+.stamina-fill{height:100%;background:#4a8a4a;transition:width 0.1s;border-radius:3px;}
+.stamina-fill.exhausted{background:#8a4a4a;animation:pulse 0.5s infinite;}
+.battery-display{color:#888;font-size:clamp(10px,2.6vw,11px);margin-top:2px;}
+
+/* ===== 游戏时钟 ===== */
+.game-time{color:rgba(200,200,200,0.6);font-size:clamp(11px,3vw,13px);position:absolute;top:env(safe-area-inset-top,8px);left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);padding:4px 12px;border-radius:4px;pointer-events:none;}
+.game-time.urgent{color:#ff4444;font-size:clamp(14px,3.8vw,17px);animation:pulse 0.5s infinite;}
+
+/* ===== 虚拟摇杆 ===== */
+.joystick-zone{position:absolute;bottom:env(safe-area-inset-bottom,20px);left:15px;width:clamp(120px,32vw,160px);height:clamp(120px,32vw,160px);pointer-events:auto;z-index:20;}
+.joystick-base{width:100%;height:100%;border-radius:50%;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.12);position:relative;}
+.joystick-stick{position:absolute;width:40%;height:40%;border-radius:50%;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);top:50%;left:50%;transform:translate(-50%,-50%);transition:none;pointer-events:none;}
+
+/* ===== 右侧操作按钮 ===== */
+.action-buttons{position:absolute;bottom:env(safe-area-inset-bottom,20px);right:15px;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:auto;z-index:20;}
+.action-btn{width:clamp(52px,14vw,64px);height:clamp(52px,14vw,64px);border-radius:50%;background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.5);font-size:clamp(20px,5vw,26px);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;}
+.action-btn .btn-label{font-size:clamp(8px,2vw,10px);margin-top:1px;opacity:0.6;}
+.action-btn:active{background:rgba(80,60,0,0.4);border-color:rgba(255,170,0,0.6);}
+.action-btn.active{border-color:#ffaa00;color:#ffaa00;background:rgba(100,80,0,0.3);}
+.action-btn.flash-on{border-color:#ffdd88;color:#ffdd88;background:rgba(100,100,40,0.3);}
+.action-btn.run-btn{width:clamp(44px,11vw,52px);height:clamp(44px,11vw,52px);font-size:clamp(16px,4vw,20px);}
+.action-btn.run-btn.running{border-color:#ff6644;color:#ff6644;background:rgba(100,30,0,0.3);}
+.interact-hint{color:rgba(255,170,0,0.8);font-size:clamp(9px,2.3vw,11px);text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ===== 对话框 ===== */
+.dialogue-box{position:absolute;bottom:0;left:0;right:0;background:rgba(10,10,15,0.95);border-top:2px solid #333;padding:clamp(14px,3.5vw,20px);padding-bottom:calc(clamp(14px,3.5vw,20px) + env(safe-area-inset-bottom,0px));min-height:clamp(100px,20vh,140px);}
+.dialogue-name{color:#8b0000;font-size:clamp(13px,3.5vw,15px);margin-bottom:6px;}
+.dialogue-text{color:#ccc;font-size:clamp(13px,3.5vw,15px);line-height:1.6;}
+.dialogue-hint{color:#555;font-size:clamp(10px,2.6vw,12px);position:absolute;bottom:calc(8px + env(safe-area-inset-bottom,0px));right:15px;}
+
+/* ===== 阅读界面 ===== */
+.reading-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:50;padding:15px;}
+.reading-paper{background:#1a1812;border:1px solid #3a3428;padding:clamp(16px,4vw,30px);width:100%;max-width:500px;max-height:80vh;overflow-y:auto;color:#c8b888;font-size:clamp(13px,3.5vw,15px);line-height:1.8;box-shadow:0 0 30px rgba(0,0,0,0.5);border-radius:6px;position:relative;-webkit-overflow-scrolling:touch;}
+.reading-paper h3{color:#aa8844;margin-bottom:12px;text-align:center;font-size:clamp(15px,4vw,18px);}
+
+/* ===== 背包 ===== */
+.inventory-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:50;padding:10px;}
+.inventory-panel{background:#111;border:1px solid #333;padding:clamp(12px,3vw,20px);width:100%;max-width:360px;border-radius:6px;position:relative;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.inventory-panel h3{color:#aaa;text-align:center;margin-bottom:12px;font-size:clamp(15px,4vw,18px);}
+.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(5px,1.5vw,8px);margin-bottom:12px;}
+.inv-slot{width:100%;aspect-ratio:1;background:#1a1a1a;border:1px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:clamp(9px,2.5vw,11px);color:#888;padding:4px;text-align:center;border-radius:4px;}
+.inv-slot.has-item{border-color:#555;}
+.inv-slot.selected{border-color:#ffaa00;background:#1a1a0a;}
+.inv-slot .item-icon{font-size:clamp(20px,5.5vw,28px);margin-bottom:2px;}
+.inv-slot .item-count{color:#aaa;font-size:clamp(8px,2.2vw,10px);}
+.inv-detail{color:#999;font-size:clamp(11px,3vw,13px);min-height:50px;border-top:1px solid #222;padding-top:10px;}
+.inv-detail .item-name{color:#ddd;font-size:clamp(13px,3.5vw,15px);margin-bottom:5px;}
+.inv-actions{margin-top:8px;}
+.inv-actions button{background:#222;border:1px solid #444;color:#aaa;padding:clamp(6px,1.5vw,8px) clamp(14px,4vw,20px);margin-right:5px;cursor:pointer;font-size:clamp(12px,3vw,14px);border-radius:4px;}
+.inv-actions button:active{border-color:#8b0000;color:#ccc;}
+
+/* ===== 规则书 ===== */
+.rulebook-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:50;padding:10px;}
+.rulebook-panel{background:#12100e;border:1px solid #3a3020;padding:clamp(12px,3vw,20px);width:100%;max-width:420px;max-height:85vh;overflow-y:auto;border-radius:6px;position:relative;-webkit-overflow-scrolling:touch;}
+.rulebook-panel h3{color:#aa8844;text-align:center;margin-bottom:12px;font-size:clamp(15px,4vw,18px);}
+.rule-entry{border-bottom:1px solid #222;padding:10px 0;color:#b0a080;}
+.rule-entry .rule-num{color:#8b0000;font-weight:bold;font-size:clamp(12px,3.2vw,14px);}
+.rule-entry .rule-text{font-size:clamp(12px,3.2vw,14px);line-height:1.5;margin:5px 0;}
+.rule-mark{display:flex;gap:6px;margin-top:8px;}
+.rule-mark button{background:none;border:1px solid #444;color:#777;padding:clamp(4px,1vw,6px) clamp(10px,3vw,14px);cursor:pointer;font-size:clamp(11px,2.8vw,13px);border-radius:4px;flex:1;text-align:center;}
+.rule-mark button:active{opacity:0.7;}
+.rule-mark button.active-true{border-color:#4a8a4a;color:#4a8a4a;background:rgba(74,138,74,0.1);}
+.rule-mark button.active-false{border-color:#8a4a4a;color:#8a4a4a;background:rgba(138,74,74,0.1);}
+.rule-mark button.active-unknown{border-color:#8a8a4a;color:#8a8a4a;background:rgba(138,138,74,0.1);}
+
+/* ===== 死亡/胜利/暂停 ===== */
+.death-screen{position:absolute;top:0;left:0;width:100%;height:100%;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;padding:20px;}
+.death-title{color:#8b0000;font-size:clamp(32px,9vw,48px);text-shadow:0 0 30px #8b0000;margin-bottom:20px;animation:glitch 2s infinite;}
+.death-reason{color:#666;font-size:clamp(13px,3.5vw,15px);margin-bottom:clamp(25px,6vh,40px);text-align:center;max-width:90%;line-height:1.6;}
+.victory-screen{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,10,15,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;padding:20px;}
+.victory-title{color:#7faa7f;font-size:clamp(28px,7vw,36px);margin-bottom:clamp(15px,4vh,30px);}
+.victory-stats{color:#999;font-size:clamp(13px,3.5vw,15px);margin-bottom:5px;}
+.victory-grade{font-size:clamp(48px,15vw,72px);margin:clamp(12px,3vh,20px) 0;font-weight:bold;}
+.grade-S{color:#ffd700;text-shadow:0 0 20px #ffd700;}
+.grade-A{color:#44cc44;}
+.grade-B{color:#4488cc;}
+.grade-C{color:#888;}
+.pause-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:150;padding:20px;}
+.pause-title{color:#888;font-size:clamp(22px,6vw,28px);margin-bottom:clamp(20px,5vh,30px);letter-spacing:6px;}
+
+/* ===== Toast通知 ===== */
+.new-rule-toast{position:absolute;top:clamp(50px,12vh,70px);left:50%;transform:translateX(-50%);background:rgba(80,60,20,0.92);border:1px solid #aa8844;color:#ddc888;padding:8px clamp(14px,4vw,20px);font-size:clamp(12px,3.2vw,14px);animation:fadeInOut 3s forwards;z-index:30;border-radius:4px;max-width:90%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px);}10%{opacity:1;transform:translateX(-50%) translateY(0);}80%{opacity:1;}100%{opacity:0;}}
+
+/* ===== 加载页 ===== */
+.loading-screen{position:absolute;top:0;left:0;width:100%;height:100%;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;padding:20px;}
+.loading-text{color:#555;font-size:clamp(13px,3.5vw,16px);margin-bottom:20px;}
+.loading-tip{color:#8b0000;font-size:clamp(11px,3vw,13px);font-style:italic;max-width:85%;text-align:center;line-height:1.5;}
+
+/* ===== 关闭按钮 ===== */
+.close-btn{position:absolute;top:8px;right:12px;background:none;border:none;color:#666;font-size:clamp(24px,6vw,30px);cursor:pointer;padding:4px 8px;z-index:5;}
+.close-btn:active{color:#aaa;}
+.notification-badge{position:absolute;top:-3px;right:-3px;width:10px;height:10px;background:#8b0000;border-radius:50%;}
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="ui-layer"></div>
+<script>
+// ===== HORROR RULE - COMPLETE GAME =====
+'use strict';
+
+// ---- CONSTANTS ----
+const TILE=32,FPS=60;
+const WALK_SPEED=100,RUN_SPEED=220,CROUCH_SPEED=50,EXHAUST_SPEED=70;
+const MAX_SAN=100,MAX_STAMINA=100,MAX_BATTERY=100;
+const STAMINA_DRAIN=15,STAMINA_REGEN=10,STAMINA_DELAY=1.5;
+const INV_SIZE=8;
+const INTERACT_RANGE=48,INTERACT_ANGLE=Math.PI/4;
+const VISION_BASE=60,FLASH_RANGE=350,FLASH_ANGLE=65*Math.PI/180;
+const CANDLE_RANGE=150;
+
+// ---- EVENT BUS ----
+class EventBus{
+  constructor(){this._h={};}
+  on(e,fn){(this._h[e]=this._h[e]||[]).push(fn);}
+  off(e,fn){if(this._h[e])this._h[e]=this._h[e].filter(f=>f!==fn);}
+  emit(e,d){(this._h[e]||[]).forEach(fn=>fn(d));}
+}
+const bus=new EventBus();
+
+// ---- UTILS ----
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function angle(a,b){return Math.atan2(b.y-a.y,b.x-a.x);}
+function lerp(a,b,t){return a+(b-a)*t;}
+function rng(a,b){return Math.random()*(b-a)+a;}
+function rngInt(a,b){return Math.floor(rng(a,b+1));}
+function dirToAngle(d){return{down:Math.PI/2,up:-Math.PI/2,left:Math.PI,right:0}[d]||0;}
+function angleTo4Dir(a){
+  if(a>-Math.PI/4&&a<=Math.PI/4)return'right';
+  if(a>Math.PI/4&&a<=3*Math.PI/4)return'down';
+  if(a>-3*Math.PI/4&&a<=-Math.PI/4)return'up';
+  return'left';
+}
+
+// ---- SOUND (Web Audio API) ----
+let audioCtx=null;
+function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+function playTone(freq,dur,type,vol){
+  if(!audioCtx)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type||'sine';o.frequency.value=freq;
+  g.gain.setValueAtTime((vol||0.1),audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+  o.connect(g);g.connect(audioCtx.destination);
+  o.start();o.stop(audioCtx.currentTime+dur);
+}
+function playNoise(dur,vol){
+  if(!audioCtx)return;
+  const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*dur,audioCtx.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(vol||0.05);
+  const s=audioCtx.createBufferSource(),g=audioCtx.createGain();
+  s.buffer=buf;g.gain.setValueAtTime(vol||0.05,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+  s.connect(g);g.connect(audioCtx.destination);s.start();
+}
+function sfx(name){
+  initAudio();
+  const S={
+    click:()=>playTone(200,0.1,'square',0.05),
+    pickup:()=>{playTone(440,0.1,'sine',0.08);playTone(660,0.1,'sine',0.06);},
+    door:()=>playNoise(0.3,0.08),
+    horror:()=>{playTone(80,1.5,'sawtooth',0.1);playNoise(0.5,0.1);},
+    chase:()=>playTone(120,0.3,'sawtooth',0.12),
+    heartbeat:()=>{playTone(60,0.15,'sine',0.15);setTimeout(()=>playTone(55,0.1,'sine',0.1),200);},
+    step:()=>playNoise(0.05,0.03),
+    sanLow:()=>playTone(50,2,'sawtooth',0.04),
+    victory:()=>{playTone(523,0.3,'sine',0.1);setTimeout(()=>playTone(659,0.3,'sine',0.1),300);setTimeout(()=>playTone(784,0.5,'sine',0.1),600);},
+    death:()=>{playTone(100,2,'sawtooth',0.15);playNoise(1,0.15);},
+    whisper:()=>playNoise(1.5,0.02),
+    phone:()=>{playTone(440,0.2,'sine',0.08);playTone(350,0.2,'sine',0.06);},
+    splash:()=>playNoise(0.4,0.06),
+    creak:()=>playTone(300,0.2,'triangle',0.04),
+  };
+  if(S[name])S[name]();
+}
+
+// ---- INPUT MANAGER ----
+const keys={};
+let joystick={active:false,dx:0,dy:0,startX:0,startY:0,touchId:null,magnitude:0};
+let mousePos={x:0,y:0};
+let isMobile=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+let mobileRunning=false; // 移动端奔跑状态
+document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;keys[e.code]=true;});
+document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;keys[e.code]=false;});
+document.addEventListener('mousemove',e=>{mousePos.x=e.clientX;mousePos.y=e.clientY;});
+
+function getMovement(){
+  let dx=0,dy=0;
+  if(keys['w']||keys['arrowup'])dy=-1;
+  if(keys['s']||keys['arrowdown'])dy=1;
+  if(keys['a']||keys['arrowleft'])dx=-1;
+  if(keys['d']||keys['arrowright'])dx=1;
+  if(joystick.active){dx=joystick.dx;dy=joystick.dy;}
+  const len=Math.hypot(dx,dy);
+  if(len>0){dx/=len;dy/=len;}
+  return{dx,dy,magnitude:Math.min(len,1)};
+}
+function isRunning(){return keys['shift']||mobileRunning;}
+
+// ---- 可视化虚拟摇杆 ----
+function setupVisualJoystick(){
+  const zone=document.querySelector('.joystick-zone');
+  if(!zone)return;
+  const base=zone.querySelector('.joystick-base');
+  const stick=zone.querySelector('.joystick-stick');
+  if(!base||!stick)return;
+  const maxR=base.offsetWidth/2*0.65;
+
+  zone.addEventListener('touchstart',e=>{
+    e.preventDefault();e.stopPropagation();
+    const t=e.changedTouches[0];
+    const rect=base.getBoundingClientRect();
+    joystick.active=true;
+    joystick.touchId=t.identifier;
+    joystick.startX=rect.left+rect.width/2;
+    joystick.startY=rect.top+rect.height/2;
+    joystick.dx=0;joystick.dy=0;joystick.magnitude=0;
+    updateJoystickStick(stick,0,0);
+  },{passive:false});
+
+  zone.addEventListener('touchmove',e=>{
+    e.preventDefault();e.stopPropagation();
+    for(const t of e.changedTouches){
+      if(t.identifier===joystick.touchId){
+        const dx=t.clientX-joystick.startX,dy=t.clientY-joystick.startY;
+        const d=Math.hypot(dx,dy);
+        const actualMax=base.offsetWidth/2*0.65;
+        const clamped=Math.min(d,actualMax);
+        if(d>0){
+          joystick.dx=(dx/d)*(clamped/actualMax);
+          joystick.dy=(dy/d)*(clamped/actualMax);
+        }
+        joystick.magnitude=clamped/actualMax;
+        // 移动摇杆手柄
+        const stickX=d>0?(dx/d)*clamped:0;
+        const stickY=d>0?(dy/d)*clamped:0;
+        updateJoystickStick(stick,stickX,stickY);
+      }
+    }
+  },{passive:false});
+
+  const endTouch=e=>{
+    for(const t of e.changedTouches){
+      if(t.identifier===joystick.touchId){
+        joystick.active=false;joystick.dx=0;joystick.dy=0;joystick.touchId=null;joystick.magnitude=0;
+        updateJoystickStick(stick,0,0);
+      }
+    }
+  };
+  zone.addEventListener('touchend',endTouch);
+  zone.addEventListener('touchcancel',endTouch);
+}
+
+function updateJoystickStick(stick,ox,oy){
+  if(!stick)return;
+  stick.style.transform=`translate(calc(-50% + ${ox}px), calc(-50% + ${oy}px))`;
+}
+
+// 兼容PC端的Canvas触控（作为后备）
+function setupTouch(canvas){
+  canvas.addEventListener('touchstart',e=>{
+    e.preventDefault();
+  },{passive:false});
+  canvas.addEventListener('touchmove',e=>{
+    e.preventDefault();
+  },{passive:false});
+}
+
+// ---- ITEM DATABASE ----
+const ITEMS={
+  I001:{id:'I001',name:'手电筒',type:'KeyItem',icon:'🔦',maxStack:1,desc:'提供扇形照明，消耗电量。'},
+  I002:{id:'I002',name:'备用电池',type:'Consumable',icon:'🔋',maxStack:5,desc:'为手电筒恢复50%电量。'},
+  I003:{id:'I003',name:'镇定药片',type:'Consumable',icon:'💊',maxStack:5,desc:'恢复15点理智值。'},
+  I004:{id:'I004',name:'火柴',type:'Consumable',icon:'🔥',maxStack:10,desc:'点燃后提供圆形照明，持续30秒。'},
+  I005:{id:'I005',name:'教务处备用钥匙',type:'KeyItem',icon:'🔑',maxStack:1,desc:'用于打开一楼被锁死的大门。'},
+  I006:{id:'I006',name:'特制鱼饵',type:'KeyItem',icon:'🐟',maxStack:1,desc:'散发腥臭味的肉块，可安抚无氧潜水员。'},
+  I007:{id:'I007',name:'水泵室钥匙',type:'KeyItem',icon:'🔑',maxStack:1,desc:'用于进入水泵控制室。'},
+  I008:{id:'I008',name:'红皮书',type:'KeyItem',icon:'📕',maxStack:1,desc:'可用来扑灭幽灵火灾。'},
+  I009:{id:'I009',name:'生锈的钥匙',type:'KeyItem',icon:'🗝️',maxStack:1,desc:'前任房客掉落，用于打开阳台暗格。'},
+  I010:{id:'I010',name:'房屋转让契约',type:'KeyItem',icon:'📜',maxStack:1,desc:'被诅咒的源头，烧毁后可解除封锁。'},
+  I011:{id:'I011',name:'复习资料',type:'KeyItem',icon:'📖',maxStack:1,desc:'你的高三复习资料。'},
+  I012:{id:'I012',name:'床单',type:'KeyItem',icon:'🏳️',maxStack:1,desc:'可以用来蒙住发光的物体。'},
+  I013:{id:'I013',name:'生肉',type:'KeyItem',icon:'🥩',maxStack:1,desc:'冰箱里出现的诡异生肉，需要处理掉。'},
+};
+
+// ---- TILE TYPES ----
+const T={
+  FLOOR:0,WALL:1,DOOR:2,DOOR_LOCKED:3,STAIRS:4,
+  DESK:5,CHAIR:6,BED:7,TOILET:8,SINK:9,
+  SHELF:10,LOCKER:11,WINDOW:12,SOFA:13,TV:14,
+  FRIDGE:15,STOVE:16,TABLE:17,PHONE:18,MIRROR:19,
+  WATER:20,GLASS:21,TANK:22,PIPE:23,SWITCH:24,
+  NOTE:25,LIGHT:26,EXIT:27,CURTAIN:28,BALCONY:29,
+  CARPET:30,BLOOD:31
+};
+const TILE_COLORS={
+  [T.FLOOR]:'#1a1a22',[T.WALL]:'#2a2a35',[T.DOOR]:'#4a3520',[T.DOOR_LOCKED]:'#3a2515',
+  [T.STAIRS]:'#252530',[T.DESK]:'#3a3025',[T.CHAIR]:'#302820',[T.BED]:'#25303a',
+  [T.TOILET]:'#d8d8e0',[T.SINK]:'#c8c8d0',[T.SHELF]:'#352a20',[T.LOCKER]:'#35404a',
+  [T.WINDOW]:'#1a2a3a',[T.SOFA]:'#3a2a25',[T.TV]:'#111118',[T.FRIDGE]:'#c0c0c8',
+  [T.STOVE]:'#2a2a2a',[T.TABLE]:'#3a3025',[T.PHONE]:'#222228',[T.MIRROR]:'#8899aa',
+  [T.WATER]:'#0a1a3a',[T.GLASS]:'#334455',[T.TANK]:'#0a2040',[T.PIPE]:'#3a3a3a',
+  [T.SWITCH]:'#ffaa00',[T.NOTE]:'#aa9960',[T.LIGHT]:'#ffe880',[T.EXIT]:'#2a5a2a',
+  [T.CURTAIN]:'#3a2535',[T.BALCONY]:'#1a1a28',[T.CARPET]:'#2a1a1a',[T.BLOOD]:'#3a0a0a'
+};
+const SOLID_TILES=new Set([T.WALL,T.DOOR_LOCKED,T.DESK,T.SHELF,T.LOCKER,T.FRIDGE,T.STOVE,T.TANK,T.PIPE,T.BED,T.SOFA,T.TV]);
+const BLOCKS_LIGHT=new Set([T.WALL,T.DOOR_LOCKED,T.DOOR]);
+
+// ---- MAP CLASS ----
+class GameMap{
+  constructor(w,h,data,interactables,lights,triggers,entities,name){
+    this.w=w;this.h=h;this.data=data;
+    this.interactables=interactables||[];
+    this.lights=lights||[];
+    this.triggers=triggers||[];
+    this.entities=entities||[];
+    this.name=name||'';
+  }
+  get(x,y){
+    if(x<0||y<0||x>=this.w||y>=this.h)return T.WALL;
+    return this.data[y*this.w+x];
+  }
+  set(x,y,v){
+    if(x>=0&&y>=0&&x<this.w&&y<this.h)this.data[y*this.w+x]=v;
+  }
+  isSolid(px,py){
+    const tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
+    return SOLID_TILES.has(this.get(tx,ty));
+  }
+  blocksLight(tx,ty){return BLOCKS_LIGHT.has(this.get(tx,ty));}
+}
+
+// ---- PLAYER CLASS ----
+class Player{
+  constructor(x,y){
+    this.x=x;this.y=y;this.w=20;this.h=20;
+    this.dir='down';this.dirAngle=Math.PI/2;
+    this.speed=0;this.san=MAX_SAN;this.stamina=MAX_STAMINA;
+    this.battery=MAX_BATTERY;this.flashlightOn=false;
+    this.inventory=[];this.isExhausted=false;
+    this.staminaRegenDelay=0;this.isHiding=false;
+    this.stepTimer=0;this.darkTimer=0;this.alive=true;
+    this.candleTimer=0;this.candleActive=false;
+    this.matchCount=0;
+  }
+  hasItem(id){return this.inventory.some(i=>i.id===id);}
+  addItem(id){
+    const def=ITEMS[id];if(!def)return false;
+    const existing=this.inventory.find(i=>i.id===id);
+    if(existing&&def.type==='Consumable'&&existing.count<def.maxStack){
+      existing.count++;return true;
+    }
+    if(this.inventory.length>=INV_SIZE)return false;
+    this.inventory.push({id,count:1});
+    sfx('pickup');return true;
+  }
+  removeItem(id){
+    const idx=this.inventory.findIndex(i=>i.id===id);
+    if(idx<0)return false;
+    this.inventory[idx].count--;
+    if(this.inventory[idx].count<=0)this.inventory.splice(idx,1);
+    return true;
+  }
+  useItem(id){
+    const def=ITEMS[id];if(!def)return;
+    if(id==='I002'){this.battery=Math.min(MAX_BATTERY,this.battery+50);this.removeItem(id);}
+    else if(id==='I003'){this.modSan(15);this.removeItem(id);}
+    else if(id==='I004'){this.candleActive=true;this.candleTimer=30;this.removeItem(id);}
+  }
+  modSan(v){
+    this.san=clamp(this.san+v,0,MAX_SAN);
+    bus.emit('PLAYER_SANITY_CHANGE',{amount:v,total:this.san});
+    if(this.san<=0){this.alive=false;bus.emit('GAME_OVER',{reason:'理智归零，你已被黑暗吞噬……'});}
+  }
+  update(dt,map){
+    if(!this.alive||this.isHiding)return;
+    const mv=getMovement();
+    const running=isRunning()&&!this.isExhausted&&this.stamina>0;
+    let spd=mv.magnitude>0?(running?RUN_SPEED:WALK_SPEED):0;
+    if(this.isExhausted)spd=Math.min(spd,EXHAUST_SPEED);
+    if(this.san<20)spd*=0.8;
+    this.speed=spd;
+    if(mv.magnitude>0){
+      this.dirAngle=Math.atan2(mv.dy,mv.dx);
+      this.dir=angleTo4Dir(this.dirAngle);
+      const nx=this.x+mv.dx*spd*dt,ny=this.y+mv.dy*spd*dt;
+      if(!map.isSolid(nx-this.w/2,this.y-this.h/2)&&!map.isSolid(nx+this.w/2,this.y-this.h/2)&&
+         !map.isSolid(nx-this.w/2,this.y+this.h/2)&&!map.isSolid(nx+this.w/2,this.y+this.h/2))this.x=nx;
+      if(!map.isSolid(this.x-this.w/2,ny-this.h/2)&&!map.isSolid(this.x+this.w/2,ny-this.h/2)&&
+         !map.isSolid(this.x-this.w/2,ny+this.h/2)&&!map.isSolid(this.x+this.w/2,ny+this.h/2))this.y=ny;
+      this.stepTimer-=dt;
+      if(this.stepTimer<=0){sfx('step');this.stepTimer=running?0.25:0.4;}
+    }
+    // Stamina
+    if(running&&mv.magnitude>0){
+      this.stamina=Math.max(0,this.stamina-STAMINA_DRAIN*dt);
+      this.staminaRegenDelay=STAMINA_DELAY;
+      if(this.stamina<=0)this.isExhausted=true;
+    }else{
+      this.staminaRegenDelay=Math.max(0,this.staminaRegenDelay-dt);
+      if(this.staminaRegenDelay<=0)this.stamina=Math.min(MAX_STAMINA,this.stamina+STAMINA_REGEN*dt);
+      if(this.isExhausted&&this.stamina>=50)this.isExhausted=false;
+    }
+    // Battery
+    if(this.flashlightOn&&this.hasItem('I001')){
+      this.battery=Math.max(0,this.battery-dt);
+      if(this.battery<=0)this.flashlightOn=false;
+    }
+    // Candle
+    if(this.candleActive){this.candleTimer-=dt;if(this.candleTimer<=0)this.candleActive=false;}
+  }
+  draw(ctx,cam){
+    const sx=this.x-cam.x,sy=this.y-cam.y;
+    // Body
+    ctx.fillStyle=this.san<20?'#aa6666':'#88aacc';
+    ctx.fillRect(sx-this.w/2,sy-this.h/2,this.w,this.h);
+    // Direction indicator
+    const dx=Math.cos(this.dirAngle)*12,dy=Math.sin(this.dirAngle)*12;
+    ctx.strokeStyle='#ffdd88';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+dx,sy+dy);ctx.stroke();
+  }
+}
+
+// ---- MONSTER CLASS ----
+class Monster{
+  constructor(cfg){
+    Object.assign(this,cfg);
+    this.state='patrol';this.alertLevel=0;
+    this.wpIdx=0;this.searchTimer=0;
+    this.lastSeenX=0;this.lastSeenY=0;
+    this.stateTimer=0;this.visible=true;
+    this.active=true;this.triggered=false;
+  }
+  update(dt,player,map){
+    if(!this.active)return;
+    const d=dist(this,player);
+    const toPlayer=angle(this,player);
+    // Perception
+    if(player.isHiding){this.alertLevel=Math.max(0,this.alertLevel-10*dt);
+    }else{
+      // Vision
+      if(d<this.visionRadius){
+        const angleDiff=Math.abs(((toPlayer-this.facing)%(2*Math.PI)+3*Math.PI)%(2*Math.PI)-Math.PI);
+        const halfAngle=(this.visionAngle||90)*Math.PI/360;
+        if(angleDiff<halfAngle){
+          const rate=player.flashlightOn?50:25;
+          this.alertLevel=Math.min(100,this.alertLevel+rate*dt);
+          this.lastSeenX=player.x;this.lastSeenY=player.y;
+        }
+      }
+      // Hearing
+      if(d<this.hearingRadius&&player.speed>=RUN_SPEED){
+        this.alertLevel=Math.min(100,this.alertLevel+30*dt);
+        this.lastSeenX=player.x;this.lastSeenY=player.y;
+      }
+    }
+    // State machine
+    switch(this.state){
+      case'patrol':
+        if(this.alertLevel>0){this.state='suspicious';break;}
+        if(this.waypoints&&this.waypoints.length>0){
+          const wp=this.waypoints[this.wpIdx];
+          const wd=dist(this,wp);
+          if(wd<5){this.wpIdx=(this.wpIdx+1)%this.waypoints.length;}
+          else{
+            const a=angle(this,wp);this.facing=a;
+            this.x+=Math.cos(a)*this.speedWalk*dt;
+            this.y+=Math.sin(a)*this.speedWalk*dt;
+          }
+        }
+        break;
+      case'suspicious':
+        if(this.alertLevel>=100){this.state='chase';sfx('chase');bus.emit('MONSTER_STATE_CHANGE',{id:this.id,state:'chase'});break;}
+        if(this.alertLevel<=0){this.state='patrol';break;}
+        this.facing=angle(this,{x:this.lastSeenX,y:this.lastSeenY});
+        if(this.alertLevel>50){
+          const a=this.facing;
+          this.x+=Math.cos(a)*this.speedWalk*0.5*dt;
+          this.y+=Math.sin(a)*this.speedWalk*0.5*dt;
+        }
+        if(d>this.visionRadius&&d>this.hearingRadius){
+          this.alertLevel=Math.max(0,this.alertLevel-10*dt);
+        }
+        break;
+      case'chase':
+        if(!player.alive){this.state='patrol';this.alertLevel=0;break;}
+        if(player.isHiding||d>this.visionRadius*1.5){
+          this.searchTimer=10;this.state='search';break;
+        }
+        this.facing=angle(this,player);
+        const cs=this.speedChase||200;
+        this.x+=Math.cos(this.facing)*cs*dt;
+        this.y+=Math.sin(this.facing)*cs*dt;
+        this.lastSeenX=player.x;this.lastSeenY=player.y;
+        // Collision with walls
+        if(map.isSolid(this.x,this.y)){
+          this.x-=Math.cos(this.facing)*cs*dt;
+          this.y-=Math.sin(this.facing)*cs*dt;
+        }
+        // Catch player
+        if(d<30){
+          if(this.killPlayer){
+            player.alive=false;
+            bus.emit('GAME_OVER',{reason:`你被${this.name}抓住了……`});
+          }else{
+            player.modSan(-this.damageSan);
+          }
+        }
+        // SAN drain while chased
+        player.modSan(-1*dt);
+        break;
+      case'search':
+        this.searchTimer-=dt;
+        this.stateTimer+=dt;
+        // Random wander near last seen
+        if(this.stateTimer>1){
+          this.stateTimer=0;
+          this.facing=rng(0,Math.PI*2);
+        }
+        this.x+=Math.cos(this.facing)*this.speedWalk*0.6*dt;
+        this.y+=Math.sin(this.facing)*this.speedWalk*0.6*dt;
+        if(map.isSolid(this.x,this.y)){this.x-=Math.cos(this.facing)*this.speedWalk*dt;this.y-=Math.sin(this.facing)*this.speedWalk*dt;this.facing+=Math.PI;}
+        // Re-detect
+        if(!player.isHiding&&d<this.visionRadius*0.5){
+          this.alertLevel=100;this.state='chase';break;
+        }
+        if(this.searchTimer<=0){this.state='patrol';this.alertLevel=0;}
+        break;
+    }
+    // Keep in bounds
+    this.x=clamp(this.x,TILE,map.w*TILE-TILE);
+    this.y=clamp(this.y,TILE,map.h*TILE-TILE);
+  }
+  draw(ctx,cam){
+    if(!this.active||!this.visible)return;
+    const sx=this.x-cam.x,sy=this.y-cam.y;
+    // Monster body
+    const colors={patrol:'#4444aa',suspicious:'#aaaa44',chase:'#aa4444',search:'#aa8844'};
+    ctx.fillStyle=colors[this.state]||'#664466';
+    ctx.fillRect(sx-12,sy-12,24,24);
+    // Eyes
+    ctx.fillStyle=this.state==='chase'?'#ff0000':'#ffff00';
+    const ex=Math.cos(this.facing)*4,ey=Math.sin(this.facing)*4;
+    ctx.fillRect(sx+ex-2,sy+ey-2,4,4);
+    // Alert indicator
+    if(this.alertLevel>0&&this.state!=='patrol'){
+      ctx.fillStyle='rgba(255,0,0,0.7)';
+      ctx.fillRect(sx-12,sy-18,24*(this.alertLevel/100),3);
+    }
+  }
+}
+
+// ---- INTERACTABLE CLASS ----
+class Interactable{
+  constructor(cfg){
+    Object.assign(this,cfg);
+    this.used=false;this.visible=true;
+  }
+  canInteract(player){
+    if(this.used&&this.oneTime)return false;
+    if(!this.visible)return false;
+    const d=dist(this,player);
+    return d<INTERACT_RANGE;
+  }
+  draw(ctx,cam){
+    if(!this.visible)return;
+    const sx=this.x-cam.x,sy=this.y-cam.y;
+    ctx.fillStyle=this.color||'#aa9960';
+    ctx.fillRect(sx-8,sy-8,16,16);
+    if(this.icon){ctx.font='14px serif';ctx.fillText(this.icon,sx-7,sy+5);}
+  }
+}
+
+// ==================== LEVEL DATA ====================
+
+// Helper to build map data from string art
+function parseMap(rows){
+  const h=rows.length,w=rows[0].length;
+  const data=new Array(w*h);
+  const legend={'.':T.FLOOR,'#':T.WALL,'D':T.DOOR,'L':T.DOOR_LOCKED,'S':T.STAIRS,
+    'd':T.DESK,'c':T.CHAIR,'B':T.BED,'t':T.TOILET,'s':T.SINK,'h':T.SHELF,'K':T.LOCKER,
+    'W':T.WINDOW,'C':T.SOFA,'V':T.TV,'F':T.FRIDGE,'G':T.STOVE,'T':T.TABLE,'P':T.PHONE,
+    'M':T.MIRROR,'~':T.WATER,'g':T.GLASS,'A':T.TANK,'p':T.PIPE,'!':T.SWITCH,
+    'N':T.NOTE,'*':T.LIGHT,'E':T.EXIT,'U':T.CURTAIN,'O':T.BALCONY,'R':T.CARPET,'%':T.BLOOD};
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const ch=x<rows[y].length?rows[y][x]:'.';
+    data[y*w+x]=legend[ch]!==undefined?legend[ch]:T.FLOOR;
+  }
+  return{w,h,data};
+}
+
+// ===== LEVEL 1: 沁水市第三中学 =====
+function buildLevel1(){
+  const rows=[
+    // 40 wide x 50 tall
+    '########################################',
+    '#......................................#',
+    '#.####.####.####.####.####.####.####.#.#',
+    '#.#dd#.#dd#.#dd#.#dd#.#dd#.#dd#.#dd#.#.#',
+    '#.#..#.#..#.#..#.#..#.#..#.#..#.#..#.#.#',
+    '#.#..D.#..D.#..D.#..D.#..D.#..D.#..D.#.#',
+    '#.####.####.####.####.####.####.####.#.#',
+    '#......................................#',
+    '#......................................#',
+    '#.####.####.####.####.####.####.####.#.#',
+    '#.#dd#.#dd#.#dd#.#dd#.#dd#.#dd#.#dd#.#.#',
+    '#.#..#.#..#.#..#.#..#.#..#.#..#.#..#.#.#',
+    '#.#..D.#..D.#..D.#..D.#..D.#..D.#..D.#.#',
+    '#.####.####.####.####.####.####.####.#.#',
+    '#......................................#',
+    '#....S.................................#',
+    '########################################',
+    '#......................................#',
+    '#......................................#',
+    '#.####.####.####.####.####.####.####.#.#',
+    '#.#dd#.#dd#.#dd#.#dd#.#dd#.#dd#.#dd#.#.#',
+    '#.#..#.#..#.#..#.#..#.#..#.#..#.#..#.#.#',
+    '#.#..D.#..D.#..D.#..D.#..D.#..D.#..D.#.#',
+    '#.####.####.####.####.####.####.####.#.#',
+    '#...............*......................#',
+    '#......................................#',
+    '#.####.####.####.####.####.####.####.#.#',
+    '#.#dd#.#dd#.#dd#.#dd#.#dd#.#dd#.#dd#.#.#',
+    '#.#..#.#..#.#..#.#..#.#..#.#..#.#..#.#.#',
+    '#.#..D.#..D.#..D.#..D.#..D.#..D.#..D.#.#',
+    '#.####.####.####.####.####.####.####.#.#',
+    '#......................................#',
+    '#....S.................................#',
+    '########################################',
+    '#......................................#',
+    '#..####.####.####.##.####.####.####...#',
+    '#..#PT#.#dd#.#dd#.##.#dd#.#dd#.#dd#..#',
+    '#..#..#.#..#.#..#.##.#..#.#..#.#..#..#',
+    '#..#..D.#..D.#..D.DD.#..D.#..D.#..D..#',
+    '#..####.####.####.##.####.####.####...#',
+    '#......................................#',
+    '#....S.................................#',
+    '########################################',
+    '#..*........N.......*.............*...E#',
+    '#.###.........###........###...........#',
+    '#.#K#.........#t#........#h#...........#',
+    '#.#.#.........#s#........#.#...........#',
+    '#.#.D.........#.D........#.D...........#',
+    '#.###.........###........###...........#',
+    '#......................................#',
+    '########################################',
+  ];
+  const m=parseMap(rows);
+  const map=new GameMap(m.w,m.h,m.data);
+  map.name='沁水市第三中学';
+
+  // Interactables
+  map.interactables=[
+    {id:'bulletin',x:17*TILE+16,y:43*TILE+16,icon:'📋',name:'公告栏',type:'note',
+      text:'《夜间校园安全守则》\n\n1. 学校在23:00后绝对封闭，如果你在此时段进入校园，请确保在凌晨2:00前离开。\n2. 教学楼的楼梯只有12级。如果你在走楼梯时数出了第13级，请立刻闭上眼睛，退回上一层。\n3. 巡夜保安老王穿着蓝色制服。如果他用手电筒照你并询问你的班级，请如实回答。\n4. 高三(4)班的教室门锁坏了，推门即可进入。但如果听到教室内有读书声，请先敲门三下再进。\n5. 无论多急，绝对不要使用二楼走廊尽头的男厕所。\n6. 如果在走廊上看到一个穿红校服的女生背影，拍拍她的肩膀，她会带你找到出口。\n7. 教务处的电话只能接听，不能拨打。如果电话铃响，接起后无论听到什么，只需回答"知道了"。'},
+    {id:'schedule',x:3*TILE+16,y:43*TILE+16,icon:'📅',name:'排班表',type:'note',
+      text:'保安排班表\n\n上周备注：\n- 老王已于上周五辞职\n- 新保安尚未到岗\n- 注意：学校保安制服统一为【黑色】'},
+    {id:'flashlight',x:3*TILE+16,y:46*TILE+16,icon:'🔦',name:'手电筒',type:'item',itemId:'I001',oneTime:true},
+    {id:'battery1',x:5*TILE+16,y:46*TILE+16,icon:'🔋',name:'备用电池',type:'item',itemId:'I002',oneTime:true},
+    {id:'pills1',x:33*TILE+16,y:43*TILE+16,icon:'💊',name:'镇定药片',type:'item',itemId:'I003',oneTime:true},
+    {id:'class_material',x:26*TILE+16,y:20*TILE+16,icon:'📖',name:'复习资料',type:'item',itemId:'I011',oneTime:true,
+      onPickup:'material_got'},
+    {id:'phone1',x:3*TILE+16,y:36*TILE+16,icon:'📞',name:'教务处电话',type:'phone'},
+    {id:'key_exit',x:5*TILE+16,y:36*TILE+16,icon:'🔑',name:'备用钥匙',type:'item',itemId:'I005',oneTime:true,
+      requireEvent:'phone_answered'},
+    {id:'exit_door',x:38*TILE+16,y:43*TILE+16,icon:'🚪',name:'大门',type:'exit',requireItem:'I005'},
+    {id:'toilet_door',x:14*TILE+16,y:29*TILE+16,icon:'🚪',name:'厕所门',type:'trap',
+      trapMsg:'门在你身后消失了……你被困在了厕所里。'},
+    {id:'redgirl',x:36*TILE+16,y:24*TILE+16,icon:'👧',name:'红校服女生',type:'redgirl',color:'#aa2222'},
+    {id:'hiding_spot1',x:3*TILE+16,y:45*TILE+16,icon:'📦',name:'储物柜',type:'hide'},
+  ];
+
+  // Lights
+  map.lights=[
+    {x:16*TILE,y:24*TILE,radius:120,color:'#ffe0a0',active:true},
+    {x:3*TILE,y:43*TILE,radius:100,color:'#ffe0a0',active:true},
+    {x:20*TILE,y:43*TILE,radius:80,color:'#ffe0a0',active:true},
+    {x:33*TILE,y:43*TILE,radius:80,color:'#ffe0a0',active:true},
+  ];
+
+  // Rules
+  map.rules=[
+    {id:'R1',num:1,text:'学校在23:00后绝对封闭，如果你在此时段进入校园，请确保在凌晨2:00前离开。',type:'TRUE',mark:'unknown'},
+    {id:'R2',num:2,text:'教学楼的楼梯只有12级。如果你在走楼梯时数出了第13级，请立刻闭上眼睛，退回上一层。',type:'CONDITIONAL',mark:'unknown'},
+    {id:'R3',num:3,text:'巡夜保安老王穿着蓝色制服。如果他用手电筒照你并询问你的班级，请如实回答。',type:'TRAP',mark:'unknown'},
+    {id:'R4',num:4,text:'高三(4)班的教室门锁坏了，推门即可进入。但如果听到教室内有读书声，请先敲门三下再进。',type:'TRUE',mark:'unknown'},
+    {id:'R5',num:5,text:'无论多急，绝对不要使用二楼走廊尽头的男厕所。',type:'TRUE',mark:'unknown'},
+    {id:'R6',num:6,text:'如果在走廊上看到一个穿红校服的女生背影，拍拍她的肩膀，她会带你找到出口。',type:'FALSE',mark:'unknown'},
+    {id:'R7',num:7,text:'教务处的电话只能接听，不能拨打。如果电话铃响，接起后无论听到什么，只需回答"知道了"。',type:'TRUE',mark:'unknown'},
+  ];
+
+  // Monster configs
+  map.monsterConfigs=[
+    {id:'M001',name:'伪人保安',x:20*TILE,y:7*TILE,speedWalk:80,speedChase:200,
+      visionRadius:350,visionAngle:65,hearingRadius:400,damageSan:40,killPlayer:true,
+      facing:0,waypoints:[
+        {x:5*TILE,y:7*TILE},{x:35*TILE,y:7*TILE},{x:35*TILE,y:14*TILE},
+        {x:5*TILE,y:14*TILE},{x:5*TILE,y:24*TILE},{x:35*TILE,y:24*TILE},
+        {x:35*TILE,y:31*TILE},{x:5*TILE,y:31*TILE}
+      ]},
+  ];
+
+  map.playerStart={x:18*TILE,y:48*TILE+16};
+  map.timeLimit=150; // 2.5 minutes game time (scaled)
+  map.gameClock=23*60+30; // 23:30 = 1410 minutes
+  map.clockSpeed=5; // 5x speed
+  map.deadlineMinute=24*60+2*60; // 2:00 AM next day = 1560 minutes (absolute, no modulo)
+  return map;
+}
+
+// ===== LEVEL 2: 蓝海市极地海洋馆 =====
+function buildLevel2(){
+  const rows=[
+    '##############################################',
+    '#............................................#',
+    '#.####.......................................#',
+    '#.#KK#..####.####.####.####.####.####.####..#',
+    '#.#..#..#~~#.#~~#.#~~#.#~~#.#~~#.#~~#.#~~#..#',
+    '#.#T.D..#..#.#..#.#..#.#..#.#..#.#..#.#..#..#',
+    '#.####..#..D.#..D.#..D.#..D.#..D.#..D.#..D..#',
+    '#.......####.####.####.####.####.####.####..#',
+    '#............................................#',
+    '#.....*...........*...........*..............#',
+    '#............................................#',
+    '##############DD#############################',
+    '#............................................#',
+    '#.gggggggggggggggggggggggggggggggggggggggg..#',
+    '#.g~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~g..#',
+    '#.g~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~g..#',
+    '#.g~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~g..#',
+    '#.gggggggggggggggggggggggggggggggggggggggg..#',
+    '#............................................#',
+    '#............................................#',
+    '##############DD#############################',
+    '#............................................#',
+    '#..####.####.####........####.####.####.....#',
+    '#..#AA#.#AA#.#AA#........#AA#.#AA#.#AA#.....#',
+    '#..#..#.#..#.#..#........#..#.#..#.#..#.....#',
+    '#..#..D.#..D.#..D........#..D.#..D.#..D.....#',
+    '#..####.####.####........####.####.####.....#',
+    '#............................................#',
+    '#....!...........N...........*..........*...#',
+    '#............................................#',
+    '######################DD#####################',
+    '#............................................#',
+    '#..####.####.................####.####.####.#',
+    '#..#pp#.#pp#.................#KK#.#KK#.#KK#.#',
+    '#..#!.#.#..#.................#..#.#..#.#..#.#',
+    '#..#..D.#..D.................#..D.#..D.#..D.#',
+    '#..####.####.................####.####.####.#',
+    '#............................................#',
+    '#.......*.....................*..........E...#',
+    '#............................................#',
+    '##############################################',
+  ];
+  const m=parseMap(rows);
+  const map=new GameMap(m.w,m.h,m.data);
+  map.name='蓝海市极地海洋馆';
+
+  map.interactables=[
+    {id:'manual',x:4*TILE+16,y:5*TILE+16,icon:'📋',name:'操作规范',type:'note',
+      text:'《夜间设备维护操作规范》\n\n1. 维护期间，请保持浅海区的水槽照明常亮。如果灯光闪烁，请在10秒内找到备用电源开关。\n2. 海底隧道是绝对安全的。如果你觉得玻璃外有东西在看着你，那只是错觉，请直视它并快速走过。\n3. 深海巨兽区目前没有展出任何生物。如果水槽内出现巨大发光体，请立刻按下墙上的红色警报按钮。\n4. 遇到穿着潜水服但没有携带氧气瓶的人，请向他提供你背包里的"特制鱼饵"。\n5. 水泵控制室的温度必须保持在20度。如果温度计显示低于15度，请躲进储物柜，直到听到三声敲门声再出来。\n6. 如果听到水槽里传来人类的呼救声，请无视。我们的水槽是隔音的。'},
+    {id:'diary',x:2*TILE+16,y:3*TILE+16,icon:'📓',name:'上一任员工日记',type:'note',
+      text:'日记碎片\n\n……那些东西不是鱼，它们有意识……\n不要看它们的眼睛！\n隧道不安全，低头走过去……\n红色按钮已损坏，按下会切断全馆电力\n上帝保佑……'},
+    {id:'flashlight2',x:2*TILE+16,y:5*TILE+16,icon:'🔦',name:'手电筒',type:'item',itemId:'I001',oneTime:true},
+    {id:'bait',x:4*TILE+16,y:3*TILE+16,icon:'🐟',name:'特制鱼饵',type:'item',itemId:'I006',oneTime:true},
+    {id:'pills2',x:2*TILE+16,y:4*TILE+16,icon:'💊',name:'镇定药片',type:'item',itemId:'I003',oneTime:true},
+    {id:'light_switch1',x:5*TILE+16,y:28*TILE+16,icon:'🔘',name:'备用电源开关',type:'switch',switchId:'shallow_lights'},
+    {id:'red_button',x:5*TILE+16,y:9*TILE+16,icon:'🔴',name:'红色警报按钮',type:'trap',
+      trapMsg:'全馆电力被切断了！黑暗中传来无数涌动的声音……'},
+    {id:'diver_npc',x:20*TILE+16,y:27*TILE+16,icon:'🤿',name:'无氧潜水员',type:'diver'},
+    {id:'pump_door',x:3*TILE+16,y:34*TILE+16,icon:'🚪',name:'水泵室门',type:'door_locked',requireItem:'I007'},
+    {id:'pump_switch',x:3*TILE+16,y:33*TILE+16,icon:'⚙️',name:'水泵开关',type:'pump',requireEvent:'pump_room_entered'},
+    {id:'locker2',x:36*TILE+16,y:33*TILE+16,icon:'📦',name:'储物柜',type:'hide'},
+    {id:'exit2',x:42*TILE+16,y:38*TILE+16,icon:'🚪',name:'出口大门',type:'exit',requireEvent:'pump_restarted'},
+    {id:'tunnel_eye',x:22*TILE+16,y:15*TILE+16,icon:'👁️',name:'玻璃外的阴影',type:'gazer',color:'#2244aa'},
+  ];
+
+  map.lights=[
+    {x:6*TILE,y:9*TILE,radius:100,color:'#aaddff',active:true,id:'shallow_light1'},
+    {x:18*TILE,y:9*TILE,radius:100,color:'#aaddff',active:true,id:'shallow_light2'},
+    {x:30*TILE,y:9*TILE,radius:100,color:'#aaddff',active:true,id:'shallow_light3'},
+    {x:5*TILE,y:28*TILE,radius:80,color:'#4466aa',active:true},
+    {x:30*TILE,y:28*TILE,radius:80,color:'#4466aa',active:true},
+    {x:7*TILE,y:38*TILE,radius:60,color:'#88aacc',active:true},
+    {x:30*TILE,y:38*TILE,radius:60,color:'#88aacc',active:true},
+  ];
+
+  map.rules=[
+    {id:'R1',num:1,text:'维护期间，请保持浅海区的水槽照明常亮。如果灯光闪烁，请在10秒内找到备用电源开关。',type:'TRUE',mark:'unknown'},
+    {id:'R2',num:2,text:'海底隧道是绝对安全的。如果你觉得玻璃外有东西在看着你，那只是错觉，请直视它并快速走过。',type:'FALSE',mark:'unknown'},
+    {id:'R3',num:3,text:'深海巨兽区目前没有展出任何生物。如果水槽内出现巨大发光体，请立刻按下墙上的红色警报按钮。',type:'TRAP',mark:'unknown'},
+    {id:'R4',num:4,text:'遇到穿着潜水服但没有携带氧气瓶的人，请向他提供你背包里的"特制鱼饵"。',type:'CONDITIONAL',mark:'unknown'},
+    {id:'R5',num:5,text:'水泵控制室的温度必须保持在20度。如果温度计显示低于15度，请躲进储物柜，直到听到三声敲门声再出来。',type:'TRUE',mark:'unknown'},
+    {id:'R6',num:6,text:'如果听到水槽里传来人类的呼救声，请无视。我们的水槽是隔音的。',type:'TRUE',mark:'unknown'},
+  ];
+
+  map.monsterConfigs=[
+    {id:'M004',name:'溺水者',x:30*TILE,y:15*TILE,speedWalk:50,speedChase:150,
+      visionRadius:200,visionAngle:360,hearingRadius:300,damageSan:20,killPlayer:true,
+      facing:0,waypoints:[{x:10*TILE,y:15*TILE},{x:35*TILE,y:15*TILE}]},
+  ];
+
+  map.playerStart={x:3*TILE,y:1*TILE+16};
+  map.timeLimit=0;
+  map.gameClock=22*60;
+  map.clockSpeed=3;
+  map.deadlineMinute=0;
+  return map;
+}
+
+// ===== LEVEL 3: 幸福小区404号房 =====
+function buildLevel3(){
+  const rows=[
+    '################',
+    '#..C.V.T......O#',
+    '#..............U#',
+    '#..............U#',
+    '#..............O#',
+    '#......*........#',
+    '#...............#',
+    '######DD########',
+    '#BBBB#.........#',
+    '#....#.........#',
+    '#..K.#..FG.....#',
+    '#....#.........#',
+    '#....D...T.....#',
+    '######.........#',
+    '#tsMK#.........#',
+    '#....#.........#',
+    '#....D.........#',
+    '######.........#',
+    '################',
+  ];
+  const m=parseMap(rows);
+  const map=new GameMap(m.w,m.h,m.data);
+  map.name='幸福小区404号房';
+
+  map.interactables=[
+    {id:'notice',x:7*TILE+16,y:7*TILE+16,icon:'📋',name:'租客入住须知',type:'note',
+      text:'《租客入住须知》\n\n1. 晚上零点后，请拉上所有窗帘。如果听到窗外有人叫你的名字，绝对不要答应。\n2. 卫生间的镜子每天只能照一次。如果第二次照镜子时发现镜子里的人动作比你慢半拍，请立刻砸碎镜子。\n3. 冰箱里只有矿泉水和面包。如果你看到了生肉，请把它放进微波炉加热5分钟，然后倒进马桶冲走。\n4. 电视机没有插电。如果它自己亮起并播放雪花屏，请坐在沙发上看满1分钟，它会自动关闭。\n5. 床底是安全的。如果门外传来钥匙开门的声音，请立刻躲进床底，无论看到什么都不要出声。\n6. 厨房的煤气灶如果自己打火，请用客厅桌子上的红皮书将其扑灭，不要用水。'},
+    {id:'diary3',x:4*TILE+16,y:10*TILE+16,icon:'📓',name:'卧室日记',type:'note',
+      text:'前任租客的日记\n\n……镜子是封印，千万别碎……\n它被困在镜子里面……\n只要不打碎，它就出不来……\n如果镜中人开始动作不同步了，关灯锁门就好……'},
+    {id:'redbook',x:6*TILE+16,y:1*TILE+16,icon:'📕',name:'红皮书',type:'item',itemId:'I008',oneTime:true},
+    {id:'bedsheet',x:2*TILE+16,y:8*TILE+16,icon:'🏳️',name:'床单',type:'item',itemId:'I012',oneTime:true},
+    {id:'matches',x:10*TILE+16,y:10*TILE+16,icon:'🔥',name:'火柴',type:'item',itemId:'I004',oneTime:true},
+    {id:'pills3',x:3*TILE+16,y:14*TILE+16,icon:'💊',name:'镇定药片',type:'item',itemId:'I003',oneTime:true},
+    {id:'tv_interact',x:4*TILE+16,y:1*TILE+16,icon:'📺',name:'电视机',type:'tv'},
+    {id:'fridge_interact',x:9*TILE+16,y:10*TILE+16,icon:'🧊',name:'冰箱',type:'fridge'},
+    {id:'mirror_interact',x:4*TILE+16,y:14*TILE+16,icon:'🪞',name:'卫生间镜子',type:'mirror'},
+    {id:'stove_interact',x:10*TILE+16,y:10*TILE+16,icon:'🔥',name:'煤气灶',type:'stove'},
+    {id:'bed_hide',x:2*TILE+16,y:9*TILE+16,icon:'🛏️',name:'床底',type:'hide'},
+    {id:'window_curtain',x:15*TILE+16,y:2*TILE+16,icon:'🪟',name:'窗帘',type:'curtain'},
+    {id:'balcony_lock',x:15*TILE+16,y:1*TILE+16,icon:'🔒',name:'阳台暗格',type:'door_locked',requireItem:'I009'},
+    {id:'contract',x:15*TILE+16,y:4*TILE+16,icon:'📜',name:'房屋转让契约',type:'item',itemId:'I010',oneTime:true,
+      requireEvent:'balcony_opened'},
+    {id:'exit3',x:7*TILE+16,y:7*TILE+16,icon:'🚪',name:'入户门',type:'exit',requireEvent:'curse_broken'},
+    {id:'microwave',x:11*TILE+16,y:12*TILE+16,icon:'📦',name:'微波炉',type:'microwave'},
+  ];
+
+  map.lights=[
+    {x:7*TILE,y:5*TILE,radius:100,color:'#ffe8c0',active:true,id:'living_light'},
+    {x:3*TILE,y:9*TILE,radius:60,color:'#ffe8c0',active:true},
+    {x:10*TILE,y:12*TILE,radius:60,color:'#ffe8c0',active:true},
+    {x:3*TILE,y:15*TILE,radius:50,color:'#ffe8c0',active:true},
+  ];
+
+  map.rules=[
+    {id:'R1',num:1,text:'晚上零点后，请拉上所有窗帘。如果听到窗外有人叫你的名字，绝对不要答应。',type:'TRUE',mark:'unknown'},
+    {id:'R2',num:2,text:'卫生间的镜子每天只能照一次。如果第二次照镜子时发现镜子里的人动作比你慢半拍，请立刻砸碎镜子。',type:'FALSE',mark:'unknown'},
+    {id:'R3',num:3,text:'冰箱里只有矿泉水和面包。如果你看到了生肉，请把它放进微波炉加热5分钟，然后倒进马桶冲走。',type:'TRUE',mark:'unknown'},
+    {id:'R4',num:4,text:'电视机没有插电。如果它自己亮起并播放雪花屏，请坐在沙发上看满1分钟，它会自动关闭。',type:'TRAP',mark:'unknown'},
+    {id:'R5',num:5,text:'床底是安全的。如果门外传来钥匙开门的声音，请立刻躲进床底，无论看到什么都不要出声。',type:'TRUE',mark:'unknown'},
+    {id:'R6',num:6,text:'厨房的煤气灶如果自己打火，请用客厅桌子上的红皮书将其扑灭，不要用水。',type:'TRUE',mark:'unknown'},
+  ];
+
+  map.monsterConfigs=[];
+  map.playerStart={x:7*TILE,y:5*TILE};
+  map.timeLimit=0;
+  map.gameClock=23*60+50;
+  map.clockSpeed=4;
+  map.deadlineMinute=0;
+  return map;
+}
+
+// ==================== GAME ENGINE ====================
+
+const LEVEL_BUILDERS=[buildLevel1,buildLevel2,buildLevel3];
+const LEVEL_NAMES=['沁水市第三中学','蓝海市极地海洋馆','幸福小区404号房'];
+const LEVEL_DESC=['夜间学校，取回遗忘的复习资料','海洋馆夜间维护，修复供水系统','出租屋独居，打破诅咒逃出'];
+
+// ---- GAME STATE ----
+const G={
+  state:'menu', // menu, levelSelect, playing, paused, gameover, victory, reading, inventory, rulebook, dialogue, loading
+  levelIdx:0,
+  map:null,
+  player:null,
+  monsters:[],
+  interactables:[],
+  cam:{x:0,y:0},
+  canvas:null,
+  ctx:null,
+  cw:800,ch:600,
+  elapsedTime:0,
+  gameClock:0,
+  clockSpeed:1,
+  events:new Set(),
+  toasts:[],
+  dialogueQueue:[],
+  currentDialogue:null,
+  readingText:'',
+  readingTitle:'',
+  invSelected:-1,
+  heartbeatTimer:0,
+  whisperTimer:0,
+  horrorTimer:0,
+  sanEffectAlpha:0,
+  unlockedLevels:1,
+  deathReason:'',
+  score:0,
+  levelStartTime:0,
+  shakeTimer:0,shakeIntensity:0,
+  lightFlickerTimer:0,
+  eventTimers:[],
+};
+
+// ---- CAMERA ----
+function updateCamera(){
+  if(!G.player)return;
+  const tX=G.player.x-G.cw/2,tY=G.player.y-G.ch/2;
+  G.cam.x=lerp(G.cam.x,tX,0.1);
+  G.cam.y=lerp(G.cam.y,tY,0.1);
+  // Clamp to map
+  if(G.map){
+    G.cam.x=clamp(G.cam.x,0,G.map.w*TILE-G.cw);
+    G.cam.y=clamp(G.cam.y,0,G.map.h*TILE-G.ch);
+  }
+  // Shake
+  if(G.shakeTimer>0){
+    G.cam.x+=rng(-G.shakeIntensity,G.shakeIntensity);
+    G.cam.y+=rng(-G.shakeIntensity,G.shakeIntensity);
+  }
+}
+
+// ---- RENDERING ----
+function drawMap(ctx){
+  const map=G.map;if(!map)return;
+  const sx=Math.floor(G.cam.x/TILE),sy=Math.floor(G.cam.y/TILE);
+  const ex=sx+Math.ceil(G.cw/TILE)+1,ey=sy+Math.ceil(G.ch/TILE)+1;
+  for(let y=sy;y<=ey;y++)for(let x=sx;x<=ex;x++){
+    const t=map.get(x,y);
+    const px=x*TILE-G.cam.x,py=y*TILE-G.cam.y;
+    ctx.fillStyle=TILE_COLORS[t]||'#111';
+    ctx.fillRect(px,py,TILE,TILE);
+    // Draw tile details
+    if(t===T.DESK){ctx.fillStyle='#555040';ctx.fillRect(px+2,py+2,TILE-4,TILE-4);}
+    if(t===T.BED){ctx.fillStyle='#3040aa';ctx.fillRect(px+4,py+2,TILE-8,TILE-4);}
+    if(t===T.DOOR){ctx.fillStyle='#5a4530';ctx.fillRect(px+12,py,8,TILE);}
+    if(t===T.WINDOW){ctx.fillStyle='#2a4060';ctx.fillRect(px+2,py+2,TILE-4,TILE-4);ctx.strokeStyle='#3a506a';ctx.lineWidth=1;ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);}
+    if(t===T.STAIRS){ctx.fillStyle='#3a3a45';for(let i=0;i<4;i++)ctx.fillRect(px+2,py+i*8,TILE-4,4);}
+    if(t===T.WATER){ctx.fillStyle=`rgba(20,60,140,${0.6+0.2*Math.sin(G.elapsedTime*2+x+y)})`;ctx.fillRect(px,py,TILE,TILE);}
+    if(t===T.GLASS){ctx.fillStyle='rgba(80,120,160,0.4)';ctx.fillRect(px,py,TILE,TILE);ctx.strokeStyle='#6688aa';ctx.lineWidth=1;ctx.strokeRect(px,py,TILE,TILE);}
+    if(t===T.MIRROR){ctx.fillStyle='#99aabb';ctx.fillRect(px+4,py+2,TILE-8,TILE-4);ctx.fillStyle='rgba(200,220,240,0.3)';ctx.fillRect(px+6,py+4,TILE-12,TILE-8);}
+    if(t===T.BLOOD){ctx.fillStyle='rgba(120,10,10,0.5)';ctx.fillRect(px,py,TILE,TILE);}
+    if(t===T.SWITCH){ctx.fillStyle='#cc8800';ctx.fillRect(px+10,py+8,12,16);}
+    if(t===T.EXIT){ctx.fillStyle='#3a7a3a';ctx.fillRect(px+8,py,16,TILE);ctx.fillStyle='#5aaa5a';ctx.fillRect(px+12,py+TILE/2-4,8,8);}
+  }
+}
+
+function drawLighting(ctx){
+  // Create darkness overlay
+  const lightCanvas=document.createElement('canvas');
+  lightCanvas.width=G.cw;lightCanvas.height=G.ch;
+  const lctx=lightCanvas.getContext('2d');
+  lctx.fillStyle='rgba(0,0,0,0.92)';
+  lctx.fillRect(0,0,G.cw,G.ch);
+  lctx.globalCompositeOperation='destination-out';
+
+  // Player base vision (small circle)
+  const px=G.player.x-G.cam.x,py=G.player.y-G.cam.y;
+  const baseR=VISION_BASE+(G.player.san<20?-20:0);
+  const grad0=lctx.createRadialGradient(px,py,0,px,py,baseR);
+  grad0.addColorStop(0,'rgba(0,0,0,0.6)');
+  grad0.addColorStop(1,'rgba(0,0,0,0)');
+  lctx.fillStyle=grad0;
+  lctx.beginPath();lctx.arc(px,py,baseR,0,Math.PI*2);lctx.fill();
+
+  // Flashlight cone
+  if(G.player.flashlightOn&&G.player.hasItem('I001')&&G.player.battery>0){
+    const range=FLASH_RANGE*(G.player.battery/MAX_BATTERY);
+    const a=G.player.dirAngle;
+    const halfA=FLASH_ANGLE;
+    lctx.beginPath();
+    lctx.moveTo(px,py);
+    lctx.arc(px,py,range,a-halfA,a+halfA);
+    lctx.closePath();
+    const grad1=lctx.createRadialGradient(px,py,0,px,py,range);
+    grad1.addColorStop(0,'rgba(0,0,0,0.8)');
+    grad1.addColorStop(0.7,'rgba(0,0,0,0.4)');
+    grad1.addColorStop(1,'rgba(0,0,0,0)');
+    lctx.fillStyle=grad1;
+    lctx.fill();
+  }
+
+  // Candle light
+  if(G.player.candleActive){
+    const cr=CANDLE_RANGE+rng(-5,5);
+    const grad2=lctx.createRadialGradient(px,py,0,px,py,cr);
+    grad2.addColorStop(0,'rgba(0,0,0,0.7)');
+    grad2.addColorStop(1,'rgba(0,0,0,0)');
+    lctx.fillStyle=grad2;
+    lctx.beginPath();lctx.arc(px,py,cr,0,Math.PI*2);lctx.fill();
+  }
+
+  // Map lights
+  if(G.map&&G.map.lights){
+    for(const l of G.map.lights){
+      if(!l.active)continue;
+      const lx=l.x-G.cam.x,ly=l.y-G.cam.y;
+      const r=l.radius+(G.lightFlickerTimer>0?rng(-8,8):0);
+      const grad3=lctx.createRadialGradient(lx,ly,0,lx,ly,r);
+      grad3.addColorStop(0,'rgba(0,0,0,0.5)');
+      grad3.addColorStop(1,'rgba(0,0,0,0)');
+      lctx.fillStyle=grad3;
+      lctx.beginPath();lctx.arc(lx,ly,r,0,Math.PI*2);lctx.fill();
+    }
+  }
+
+  lctx.globalCompositeOperation='source-over';
+  ctx.drawImage(lightCanvas,0,0);
+}
+
+function drawSanityEffects(ctx){
+  if(G.player.san>=60)return;
+  const intensity=1-(G.player.san/60);
+  // Vignette
+  const grad=ctx.createRadialGradient(G.cw/2,G.ch/2,G.cw*0.3,G.cw/2,G.ch/2,G.cw*0.55);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  grad.addColorStop(1,`rgba(${80*intensity},0,0,${0.3*intensity})`);
+  ctx.fillStyle=grad;ctx.fillRect(0,0,G.cw,G.ch);
+  // Scanlines
+  if(intensity>0.3){
+    ctx.fillStyle=`rgba(0,0,0,${0.05*intensity})`;
+    for(let y=0;y<G.ch;y+=2)ctx.fillRect(0,y,G.cw,1);
+  }
+  // Chromatic aberration hint
+  if(intensity>0.5){
+    ctx.fillStyle=`rgba(255,0,0,${0.02*intensity})`;
+    ctx.fillRect(rng(-3,3),rng(-3,3),G.cw,G.ch);
+  }
+  // Hallucination flash
+  if(G.player.san<20&&Math.random()<0.002){
+    ctx.fillStyle='rgba(139,0,0,0.1)';ctx.fillRect(0,0,G.cw,G.ch);
+    sfx('whisper');
+  }
+}
+
+// ---- INTERACTION SYSTEM ----
+function findNearestInteractable(){
+  let best=null,bestD=Infinity;
+  for(const ia of G.interactables){
+    if(!ia.canInteract(G.player))continue;
+    const d=dist(ia,G.player);
+    if(d<bestD){bestD=d;best=ia;}
+  }
+  return best;
+}
+
+function interact(){
+  const ia=findNearestInteractable();
+  if(!ia)return;
+  sfx('click');
+
+  switch(ia.type){
+    case'note':
+      showReading(ia.name,ia.text);
+      if(ia.rulesAttached)addRulesToBook(ia.rulesAttached);
+      ia.used=true;
+      break;
+    case'item':
+      if(ia.requireEvent&&!G.events.has(ia.requireEvent)){
+        showDialogue('???','条件尚未满足……');return;
+      }
+      if(G.player.addItem(ia.itemId)){
+        ia.used=true;ia.visible=false;
+        showToast(`获得了 ${ITEMS[ia.itemId].name}`);
+        if(ia.onPickup)G.events.add(ia.onPickup);
+      }else{showToast('背包已满！');}
+      break;
+    case'exit':
+      if(ia.requireItem&&!G.player.hasItem(ia.requireItem)){
+        showDialogue('','门被锁住了，需要钥匙。');return;
+      }
+      if(ia.requireEvent&&!G.events.has(ia.requireEvent)){
+        showDialogue('','还不能离开……');return;
+      }
+      winLevel();
+      break;
+    case'door_locked':
+      if(ia.requireItem&&G.player.hasItem(ia.requireItem)){
+        sfx('door');ia.used=true;ia.visible=false;
+        showToast('门被打开了');
+        G.events.add(ia.id+'_opened');
+        // Remove wall tile
+        const tx=Math.floor(ia.x/TILE),ty=Math.floor(ia.y/TILE);
+        G.map.set(tx,ty,T.DOOR);
+      }else{
+        showDialogue('','门被锁住了。');
+      }
+      break;
+    case'hide':
+      G.player.isHiding=!G.player.isHiding;
+      showToast(G.player.isHiding?'你躲了起来（按E离开）':'你离开了藏身处');
+      break;
+    case'phone':
+      if(!G.events.has('phone_ringing')){
+        showDialogue('','电话沉默着……');return;
+      }
+      sfx('phone');
+      G.events.add('phone_answered');
+      showDialogue('电话','……你听到了沉重的呼吸声……\n\n"知道了。"——你如此回答。\n\n电话挂断了。');
+      break;
+    case'trap':
+      sfx('horror');
+      G.shakeTimer=1;G.shakeIntensity=8;
+      G.player.modSan(-30);
+      showDialogue('！！！',ia.trapMsg);
+      ia.used=true;
+      break;
+    case'redgirl':
+      sfx('horror');
+      G.player.modSan(-25);
+      showDialogue('','她转过头来——那不是一张人类的脸……');
+      ia.visible=false;
+      G.shakeTimer=0.5;G.shakeIntensity=6;
+      break;
+    case'switch':
+      sfx('click');
+      if(ia.switchId==='shallow_lights'){
+        G.events.add('lights_fixed');
+        showToast('灯光恢复了');
+        G.lightFlickerTimer=0;
+      }
+      ia.used=true;
+      break;
+    case'diver':
+      if(G.player.hasItem('I006')){
+        G.player.removeItem('I006');
+        sfx('splash');
+        showDialogue('潜水员','……它接过了鱼饵，缓缓退入了黑暗中。\n它留下了一把钥匙。');
+        G.player.addItem('I007');
+        ia.visible=false;
+        G.events.add('diver_appeased');
+      }else{
+        sfx('horror');
+        G.player.modSan(-15);
+        showDialogue('潜水员','它面无表情地注视着你……你什么都没有给它。');
+      }
+      break;
+    case'pump':
+      if(G.events.has('pump_room_entered')){
+        sfx('click');
+        G.events.add('pump_restarted');
+        showDialogue('水泵系统','水泵重新启动了！排水系统恢复正常。\n出口大门已解锁。');
+      }else{
+        showDialogue('','你需要先进入水泵室。');
+      }
+      break;
+    case'gazer':
+      // Looking at the gazer drains sanity - rule says don't look!
+      sfx('horror');
+      G.player.modSan(-10);
+      showDialogue('','你直视了那双巨大的眼睛……\n一阵眩晕袭来……');
+      G.shakeTimer=0.3;G.shakeIntensity=4;
+      break;
+    case'tv':
+      if(!G.events.has('tv_on')){
+        showDialogue('','电视没有开。');
+      }else{
+        // Sitting and watching is a TRAP rule
+        sfx('horror');
+        G.player.modSan(-20);
+        showDialogue('电视','雪花屏中浮现了一张扭曲的面孔……\n你感到有什么东西在你身后……');
+        G.shakeTimer=1;G.shakeIntensity=5;
+      }
+      break;
+    case'fridge':
+      if(!G.events.has('fridge_meat')){
+        showDialogue('冰箱','里面只有矿泉水和面包，很正常。');
+      }else{
+        G.player.addItem('I013');
+        showDialogue('冰箱','你看到了一块……不该出现的生肉。\n你把它拿了出来。');
+        G.events.add('got_meat');
+      }
+      break;
+    case'mirror':
+      if(!G.events.has('mirror_looked')){
+        G.events.add('mirror_looked');
+        showDialogue('镜子','你看到了自己的倒影。一切正常……');
+      }else{
+        // Second look - rule says DON'T break it
+        sfx('horror');
+        showDialogue('镜子','你再次照了镜子……\n镜中的你……动作慢了半拍。\n\n但你知道——不能砸碎它。');
+        G.player.modSan(-10);
+      }
+      break;
+    case'stove':
+      if(G.events.has('stove_fire')){
+        if(G.player.hasItem('I008')){
+          G.player.removeItem('I008');
+          sfx('click');
+          showDialogue('','你用红皮书扑灭了幽灵之火。');
+          G.events.add('stove_extinguished');
+          G.events.delete('stove_fire');
+        }else{
+          showDialogue('煤气灶','火焰是蓝紫色的……你需要红皮书来扑灭它。');
+        }
+      }else{
+        showDialogue('煤气灶','煤气灶关着。');
+      }
+      break;
+    case'curtain':
+      if(!G.events.has('curtains_closed')){
+        G.events.add('curtains_closed');
+        sfx('click');showToast('你拉上了窗帘');
+      }else{showDialogue('','窗帘已经拉上了。');}
+      break;
+    case'microwave':
+      if(G.player.hasItem('I013')){
+        G.player.removeItem('I013');
+        sfx('click');
+        showDialogue('微波炉','你把生肉放入微波炉加热……\n5分钟后，你把它冲进了马桶。');
+        G.events.add('meat_disposed');
+      }else{
+        showDialogue('微波炉','空的。');
+      }
+      break;
+    default:
+      showDialogue(ia.name,'你检查了一下，没有发现什么特别的。');
+  }
+}
+
+// ---- UI HELPERS ----
+const ui=document.getElementById('ui-layer');
+function showToast(text){
+  const el=document.createElement('div');
+  el.className='new-rule-toast';el.textContent=text;
+  ui.appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+function showDialogue(name,text){
+  G.currentDialogue={name,text};
+  G.state='dialogue';
+  renderUI();
+}
+function closeDialogue(){
+  G.currentDialogue=null;
+  G.state='playing';
+  renderUI();
+}
+function showReading(title,text){
+  G.readingTitle=title;G.readingText=text;
+  G.state='reading';
+  renderUI();
+}
+
+// ---- UI RENDERING ----
+function renderUI(){
+  let html='';
+  switch(G.state){
+    case'menu':
+      html=`<div class="menu-screen" id="menuScreen">
+        <div class="menu-title">恐 怖 规 则</div>
+        <button class="menu-btn" onclick="showLevelSelect()">开 始 游 戏</button>
+        <button class="menu-btn" onclick="showHelp()">操 作 说 明</button>
+        <p class="menu-hint">${isMobile?'虚拟摇杆移动 | 按钮交互':'WASD移动 | Shift奔跑 | E交互 | Tab背包 | R规则书'}</p>
+      </div>`;
+      break;
+    case'levelSelect':
+      html=`<div class="menu-screen"><div class="menu-title" style="font-size:clamp(22px,6vw,28px);margin-bottom:clamp(20px,5vh,30px);">选 择 关 卡</div><div class="level-select-list">`;
+      for(let i=0;i<3;i++){
+        const locked=i>=G.unlockedLevels;
+        html+=`<div class="level-card ${locked?'locked':''}" ${locked?'':`onclick="startLevel(${i})"`}>
+          <h3>${locked?'???':LEVEL_NAMES[i]}</h3>
+          <p>${locked?'通关前一关解锁':LEVEL_DESC[i]}</p>
+        </div>`;
+      }
+      html+=`</div><button class="menu-btn" style="margin-top:clamp(15px,4vh,30px);" onclick="G.state='menu';renderUI();">返回</button></div>`;
+      break;
+    case'playing':{
+      const p=G.player;if(!p)break;
+      const sanWarn=p.san<30?'warning':'';
+      const stExh=p.isExhausted?'exhausted':'';
+      const cmDisplay=Math.floor(G.gameClock)%1440;
+      const hh=String(Math.floor(cmDisplay/60)%24).padStart(2,'0');
+      const mm=String(Math.floor(cmDisplay%60)).padStart(2,'0');
+      const timeUrgent=G.map&&G.map.deadlineMinute>0&&G.gameClock>G.map.deadlineMinute-30?'urgent':'';
+      const near=findNearestInteractable();
+      const flashOn=p.flashlightOn?'flash-on':'';
+      const runActive=mobileRunning?'running':'';
+      html=`<div class="hud-top">
+        <div class="hud-left">
+          <div class="san-display ${sanWarn}">SAN: ${Math.ceil(p.san)}</div>
+          <div class="stamina-bar"><div class="stamina-fill ${stExh}" style="width:${p.stamina}%"></div></div>
+          ${p.hasItem('I001')?`<div class="battery-display">🔦 ${Math.ceil(p.battery)}%</div>`:''}
+        </div>
+        <div class="hud-right">
+          <button class="hud-btn" onclick="toggleInventory()" title="背包">📦</button>
+          <button class="hud-btn" onclick="toggleRulebook()" title="规则书">📖</button>
+          <button class="hud-btn" onclick="pauseGame()" title="暂停">⏸️</button>
+        </div>
+      </div>
+      <div class="game-time ${timeUrgent}">${hh}:${mm}</div>`;
+      // 虚拟摇杆（移动端）
+      if(isMobile){
+        html+=`<div class="joystick-zone">
+          <div class="joystick-base">
+            <div class="joystick-stick"></div>
+          </div>
+        </div>`;
+        // 右侧操作按钮
+        html+=`<div class="action-buttons">`;
+        // 交互按钮
+        if(near){
+          html+=`<div class="interact-hint">${near.name}</div>`;
+          html+=`<button class="action-btn active" onclick="interact()">👆<span class="btn-label">交互</span></button>`;
+        }else{
+          html+=`<button class="action-btn" style="opacity:0.3;" disabled>👆<span class="btn-label">交互</span></button>`;
+        }
+        // 手电筒按钮
+        if(p.hasItem('I001')){
+          html+=`<button class="action-btn ${flashOn}" onclick="toggleFlashlight()">🔦<span class="btn-label">手电</span></button>`;
+        }
+        // 奔跑按钮
+        html+=`<button class="action-btn run-btn ${runActive}" ontouchstart="event.preventDefault();mobileRunning=true;" ontouchend="event.preventDefault();mobileRunning=false;" ontouchcancel="mobileRunning=false;">🏃<span class="btn-label">跑</span></button>`;
+        html+=`</div>`;
+      }else{
+        // PC端保留原有交互按钮
+        if(near){
+          html+=`<div class="action-buttons" style="bottom:80px;"><div class="interact-hint">${near.name}</div><button class="action-btn active" onclick="interact()">E</button></div>`;
+        }
+      }
+      break;
+    }
+    case'dialogue':
+      if(G.currentDialogue){
+        html+=`<div class="hud-top"><div class="hud-left"><div class="san-display">SAN: ${Math.ceil(G.player.san)}</div></div><div></div></div>`;
+        html+=`<div class="dialogue-box" onclick="closeDialogue()">
+          ${G.currentDialogue.name?`<div class="dialogue-name">${G.currentDialogue.name}</div>`:''}
+          <div class="dialogue-text">${G.currentDialogue.text.replace(/\n/g,'<br>')}</div>
+          <div class="dialogue-hint">${isMobile?'点击继续':'点击或按 E 继续'}</div>
+        </div>`;
+      }
+      break;
+    case'reading':
+      html+=`<div class="reading-overlay" onclick="G.state='playing';renderUI();">
+        <div class="reading-paper" onclick="event.stopPropagation()">
+          <button class="close-btn" onclick="G.state='playing';renderUI();">×</button>
+          <h3>${G.readingTitle}</h3>
+          <div>${G.readingText.replace(/\n/g,'<br>')}</div>
+        </div>
+      </div>`;
+      break;
+    case'inventory':{
+      const p=G.player;
+      let slots='';
+      for(let i=0;i<INV_SIZE;i++){
+        const item=p.inventory[i];
+        const sel=G.invSelected===i?'selected':'';
+        if(item){
+          const def=ITEMS[item.id];
+          slots+=`<div class="inv-slot has-item ${sel}" onclick="G.invSelected=${i};renderUI();">
+            <div class="item-icon">${def.icon}</div>
+            <div>${def.name}</div>
+            ${item.count>1?`<div class="item-count">×${item.count}</div>`:''}
+          </div>`;
+        }else{
+          slots+=`<div class="inv-slot" onclick="G.invSelected=-1;renderUI();"></div>`;
+        }
+      }
+      let detail='';
+      if(G.invSelected>=0&&p.inventory[G.invSelected]){
+        const item=p.inventory[G.invSelected];
+        const def=ITEMS[item.id];
+        detail=`<div class="inv-detail">
+          <div class="item-name">${def.icon} ${def.name}</div>
+          <div>${def.desc}</div>
+          ${def.type==='Consumable'?`<div class="inv-actions"><button onclick="G.player.useItem('${item.id}');renderUI();">使用</button></div>`:''}
+        </div>`;
+      }
+      html=`<div class="inventory-overlay" onclick="toggleInventory()">
+        <div class="inventory-panel" onclick="event.stopPropagation()">
+          <button class="close-btn" onclick="toggleInventory()">×</button>
+          <h3>背 包</h3>
+          <div class="inv-grid">${slots}</div>
+          ${detail}
+        </div>
+      </div>`;
+      break;
+    }
+    case'rulebook':{
+      let rules='';
+      if(G.map&&G.map.rules){
+        for(const r of G.map.rules){
+          const markBtns=`<div class="rule-mark">
+            <button class="${r.mark==='true'?'active-true':''}" onclick="markRule('${r.id}','true')">✓ 真</button>
+            <button class="${r.mark==='false'?'active-false':''}" onclick="markRule('${r.id}','false')">✗ 假</button>
+            <button class="${r.mark==='unknown'?'active-unknown':''}" onclick="markRule('${r.id}','unknown')">? 未知</button>
+          </div>`;
+          rules+=`<div class="rule-entry">
+            <span class="rule-num">规则 ${r.num}</span>
+            <div class="rule-text">${r.text}</div>
+            ${markBtns}
+          </div>`;
+        }
+      }
+      html=`<div class="rulebook-overlay" onclick="toggleRulebook()">
+        <div class="rulebook-panel" onclick="event.stopPropagation()">
+          <button class="close-btn" onclick="toggleRulebook()">×</button>
+          <h3>📖 规 则 书</h3>
+          ${rules}
+          <p style="color:#555;font-size:clamp(10px,2.8vw,12px);margin-top:15px;text-align:center;">标记你对每条规则真伪的判断</p>
+        </div>
+      </div>`;
+      break;
+    }
+    case'paused':
+      html=`<div class="pause-overlay">
+        <div class="pause-title">暂 停</div>
+        <button class="menu-btn" onclick="resumeGame()">继 续</button>
+        <button class="menu-btn" onclick="restartLevel()">重新开始</button>
+        <button class="menu-btn" onclick="G.state='menu';renderUI();">返回主菜单</button>
+      </div>`;
+      break;
+    case'gameover':
+      html=`<div class="death-screen">
+        <div class="death-title">你 死 了</div>
+        <div class="death-reason">${G.deathReason}</div>
+        <button class="menu-btn" onclick="restartLevel()">重新挑战</button>
+        <button class="menu-btn" onclick="G.state='menu';renderUI();">返回主菜单</button>
+      </div>`;
+      break;
+    case'victory':{
+      const elapsed=G.elapsedTime;
+      const sanLeft=G.player?Math.ceil(G.player.san):0;
+      const total=sanLeft*10+Math.max(0,300-Math.floor(elapsed))*2;
+      let grade='C',gc='grade-C';
+      if(total>500){grade='S';gc='grade-S';}
+      else if(total>350){grade='A';gc='grade-A';}
+      else if(total>200){grade='B';gc='grade-B';}
+      html=`<div class="victory-screen">
+        <div class="victory-title">逃 出 生 天</div>
+        <div class="victory-stats">存活理智: ${sanLeft}</div>
+        <div class="victory-stats">耗时: ${Math.floor(elapsed)}秒</div>
+        <div class="victory-stats">总分: ${total}</div>
+        <div class="victory-grade ${gc}">${grade}</div>
+        <button class="menu-btn" onclick="nextLevelOrMenu()">继 续</button>
+        <button class="menu-btn" onclick="G.state='menu';renderUI();">返回主菜单</button>
+      </div>`;
+      break;
+    }
+    case'loading':
+      const tips=['不是所有规则都值得遵守……','有些帮助你的人，并不是人。','保持冷静，注意细节。','黑暗中，闭上眼睛反而更安全。'];
+      html=`<div class="loading-screen">
+        <div class="loading-text">加载中...</div>
+        <div class="loading-tip">"${tips[rngInt(0,tips.length-1)]}"</div>
+      </div>`;
+      break;
+  }
+  ui.innerHTML=html;
+  // 初始化虚拟摇杆(如果存在)
+  if(isMobile&&G.state==='playing'){
+    setupVisualJoystick();
+  }
+}
+
+// ---- GLOBAL FUNCTIONS FOR UI ----
+window.showLevelSelect=function(){G.state='levelSelect';renderUI();};
+window.showHelp=function(){
+  const pcHelp='WASD / 方向键 —— 移动\nShift —— 奔跑（消耗体力）\nE —— 交互\nF —— 手电筒开关\nTab —— 打开背包\nR —— 打开规则书\nEsc —— 暂停';
+  const mobileHelp='🕹 左侧虚拟摇杆 —— 移动\n🏃 奔跑按钮 —— 长按奔跑\n👆 交互按钮 —— 与物品/NPC交互\n🔦 手电按钮 —— 开关手电筒\n📦 右上角按钮 —— 打开背包\n📖 右上角按钮 —— 打开规则书\n⏸️ 右上角按钮 —— 暂停';
+  const tips='\n\n游戏提示：\n· 仔细阅读发现的文档，分辨规则的真假\n· 注意理智值，降低到0则游戏结束\n· 奔跑会发出更大声音，吸引怪物\n· 躲藏可以躲避追踪\n· 手电筒照射范围大但会暴露自己';
+  showReading('操作说明',(isMobile?mobileHelp:pcHelp)+tips);
+  G.state='reading';renderUI();
+};
+window.startLevel=function(idx){
+  G.levelIdx=idx;
+  G.state='loading';renderUI();
+  setTimeout(()=>initLevel(idx),500);
+};
+window.toggleInventory=function(){
+  if(G.state==='inventory'){G.state='playing';G.invSelected=-1;}
+  else if(G.state==='playing'){G.state='inventory';G.invSelected=-1;}
+  renderUI();
+};
+window.toggleRulebook=function(){
+  if(G.state==='rulebook')G.state='playing';
+  else if(G.state==='playing')G.state='rulebook';
+  renderUI();
+};
+window.markRule=function(rId,mark){
+  if(G.map&&G.map.rules){
+    const r=G.map.rules.find(r=>r.id===rId);
+    if(r)r.mark=mark;
+  }
+  renderUI();
+};
+window.toggleFlashlight=function(){
+  if(G.state==='playing'&&G.player&&G.player.hasItem('I001')){
+    G.player.flashlightOn=!G.player.flashlightOn;
+    sfx('click');
+    renderUI();
+  }
+};
+window.pauseGame=function(){G.state='paused';renderUI();};
+window.resumeGame=function(){G.state='playing';renderUI();};
+window.restartLevel=function(){startLevel(G.levelIdx);};
+window.nextLevelOrMenu=function(){
+  if(G.levelIdx<2){
+    G.unlockedLevels=Math.max(G.unlockedLevels,G.levelIdx+2);
+    startLevel(G.levelIdx+1);
+  }else{
+    G.state='menu';renderUI();
+  }
+};
+
+function winLevel(){
+  sfx('victory');
+  G.state='victory';
+  G.unlockedLevels=Math.max(G.unlockedLevels,G.levelIdx+2);
+  renderUI();
+}
+
+// ---- LEVEL INITIALIZATION ----
+function initLevel(idx){
+  const map=LEVEL_BUILDERS[idx]();
+  G.map=map;
+  G.player=new Player(map.playerStart.x,map.playerStart.y);
+  G.monsters=map.monsterConfigs.map(c=>new Monster(c));
+  G.interactables=map.interactables.map(c=>new Interactable(c));
+  G.events=new Set();
+  G.elapsedTime=0;
+  G.gameClock=map.gameClock||0;
+  G.clockSpeed=map.clockSpeed||1;
+  G.cam={x:G.player.x-G.cw/2,y:G.player.y-G.ch/2};
+  G.shakeTimer=0;
+  G.lightFlickerTimer=0;
+  G.heartbeatTimer=0;
+  G.whisperTimer=0;
+  G.horrorTimer=0;
+  G.toasts=[];
+  G.eventTimers=[];
+  G.levelStartTime=performance.now();
+  G.state='playing';
+
+  // Schedule level-specific events
+  scheduleLevelEvents(idx);
+  renderUI();
+}
+
+function scheduleLevelEvents(idx){
+  if(idx===0){
+    // Level 1: Phone rings after 30s
+    G.eventTimers.push({time:30,fired:false,fn:()=>{
+      G.events.add('phone_ringing');
+      showToast('📞 远处传来电话铃声……');sfx('phone');
+    }});
+    // Stairs 13th step area trigger
+    G.eventTimers.push({time:0,fired:false,recurring:true,fn:()=>{
+      // Check if player is on stairs
+      const tx=Math.floor(G.player.x/TILE),ty=Math.floor(G.player.y/TILE);
+      if(G.map.get(tx,ty)===T.STAIRS&&!G.events.has('stairs_warned')){
+        G.events.add('stairs_warned');
+        showDialogue('','你数着台阶……12……13？\n你感到一阵不安。立刻闭上眼睛往回走！');
+        G.player.modSan(-5);sfx('horror');
+      }
+    }});
+  }else if(idx===1){
+    // Level 2: Lights flicker after 20s
+    G.eventTimers.push({time:20,fired:false,fn:()=>{
+      G.lightFlickerTimer=10;
+      showToast('💡 浅海区灯光开始闪烁！');sfx('horror');
+    }});
+    // Temperature drop event at 60s
+    G.eventTimers.push({time:60,fired:false,fn:()=>{
+      if(!G.events.has('pump_room_entered')){
+        showToast('🌡️ 温度骤降……快找储物柜躲避！');
+        sfx('horror');
+        // Spawn a temporary cold monster
+        const cold=new Monster({id:'M_COLD',name:'寒潮实体',x:20*TILE,y:33*TILE,
+          speedWalk:60,speedChase:120,visionRadius:250,visionAngle:360,hearingRadius:200,
+          damageSan:15,killPlayer:false,facing:0,waypoints:[
+            {x:10*TILE,y:33*TILE},{x:35*TILE,y:33*TILE},{x:35*TILE,y:38*TILE},{x:10*TILE,y:38*TILE}
+          ]});
+        G.monsters.push(cold);
+        setTimeout(()=>{cold.active=false;showToast('温度恢复了……');},20000);
+      }
+    }});
+  }else if(idx===2){
+    // Level 3: TV turns on after 20s
+    G.eventTimers.push({time:20,fired:false,fn:()=>{
+      G.events.add('tv_on');
+      showToast('📺 电视机自己亮了……');sfx('horror');
+    }});
+    // Fridge meat after 40s
+    G.eventTimers.push({time:40,fired:false,fn:()=>{
+      G.events.add('fridge_meat');
+      showToast('🥩 厨房传来奇怪的声音……');sfx('creak');
+    }});
+    // Door key sound + intruder after 60s
+    G.eventTimers.push({time:60,fired:false,fn:()=>{
+      showToast('🔑 门外传来钥匙声……快躲到床底！');
+      sfx('horror');
+      G.shakeTimer=0.5;G.shakeIntensity=3;
+      // Spawn intruder
+      const intruder=new Monster({id:'M_INTRUDER',name:'前任租客',x:7*TILE,y:7*TILE,
+        speedWalk:40,speedChase:100,visionRadius:180,visionAngle:120,hearingRadius:200,
+        damageSan:30,killPlayer:true,facing:Math.PI/2,waypoints:[
+          {x:7*TILE,y:7*TILE},{x:7*TILE,y:5*TILE},{x:3*TILE,y:9*TILE},
+          {x:10*TILE,y:12*TILE},{x:3*TILE,y:14*TILE},{x:7*TILE,y:7*TILE}
+        ]});
+      G.monsters.push(intruder);
+      // After 25s intruder leaves
+      setTimeout(()=>{intruder.active=false;showToast('门外传来关门声……它走了。');
+        G.events.add('intruder_left');
+      },25000);
+    }});
+    // Stove fire after 80s
+    G.eventTimers.push({time:80,fired:false,fn:()=>{
+      G.events.add('stove_fire');
+      showToast('🔥 煤气灶自己着火了！');sfx('horror');
+    }});
+    // Rusty key appears after intruder leaves
+    G.eventTimers.push({time:90,fired:false,fn:()=>{
+      if(G.events.has('intruder_left')){
+        G.player.addItem('I009');
+        showToast('🗝️ 你发现了前任租客遗落的生锈钥匙');
+      }
+    }});
+    // If curtains closed + meat disposed + stove extinguished => can get contract => burn it => exit
+    G.eventTimers.push({time:0,fired:false,recurring:true,fn:()=>{
+      if(G.events.has('curtains_closed')&&G.events.has('meat_disposed')&&
+         G.events.has('stove_extinguished')&&G.events.has('balcony_opened')&&
+         G.player.hasItem('I010')&&!G.events.has('curse_broken')){
+        G.events.add('curse_broken');
+        showDialogue('','你将房屋转让契约点燃……\n\n火焰是蓝色的。随着纸灰飘散，你感到空气变得清新了。\n\n入户门解锁了。');
+        sfx('victory');
+      }
+    }});
+  }
+}
+
+// ---- MAIN UPDATE ----
+function gameUpdate(dt){
+  if(G.state!=='playing'&&G.state!=='dialogue')return;
+  if(G.state==='dialogue')return;
+
+  G.elapsedTime+=dt;
+  G.gameClock+=dt*G.clockSpeed/60; // dt in seconds, clock in minutes
+  G.shakeTimer=Math.max(0,G.shakeTimer-dt);
+  G.lightFlickerTimer=Math.max(0,G.lightFlickerTimer-dt);
+
+  // Event timers
+  for(const et of G.eventTimers){
+    if(et.fired&&!et.recurring)continue;
+    if(et.recurring){et.fn();continue;}
+    if(G.elapsedTime>=et.time&&!et.fired){et.fired=true;et.fn();}
+  }
+
+  // Time limit check
+  if(G.map&&G.map.deadlineMinute>0){
+    if(G.gameClock>=G.map.deadlineMinute){
+      G.player.alive=false;
+      bus.emit('GAME_OVER',{reason:'时间到了……你没能在截止时间前离开。'});
+    }
+  }
+
+  // Player update
+  G.player.update(dt,G.map);
+
+  // Darkness sanity drain
+  if(!G.player.flashlightOn&&!G.player.candleActive){
+    G.player.darkTimer+=dt;
+    if(G.player.darkTimer>5)G.player.modSan(-0.5*dt);
+  }else{
+    G.player.darkTimer=0;
+  }
+
+  // Monster updates
+  for(const m of G.monsters)m.update(dt,G.player,G.map);
+
+  // Ambient sounds
+  G.heartbeatTimer-=dt;
+  if(G.player.san<40&&G.heartbeatTimer<=0){sfx('heartbeat');G.heartbeatTimer=G.player.san<20?1:2;}
+  G.whisperTimer-=dt;
+  if(G.player.san<25&&G.whisperTimer<=0){sfx('whisper');G.whisperTimer=rng(5,10);}
+
+  // Camera
+  updateCamera();
+
+  // Check game over
+  if(!G.player.alive&&G.state==='playing'){
+    G.state='gameover';
+    sfx('death');
+    renderUI();
+  }
+
+  // Update HUD periodically
+  if(Math.floor(G.elapsedTime*4)%2===0)renderUI();
+}
+
+function gameDraw(){
+  const ctx=G.ctx;
+  if(!ctx||!G.map)return;
+
+  ctx.clearRect(0,0,G.cw,G.ch);
+
+  if(G.state==='playing'||G.state==='dialogue'||G.state==='reading'||
+     G.state==='inventory'||G.state==='rulebook'||G.state==='paused'){
+    // Draw map
+    drawMap(ctx);
+
+    // Draw interactables
+    for(const ia of G.interactables)ia.draw(ctx,G.cam);
+
+    // Draw monsters
+    for(const m of G.monsters)m.draw(ctx,G.cam);
+
+    // Draw player
+    if(G.player)G.player.draw(ctx,G.cam);
+
+    // Draw lighting
+    drawLighting(ctx);
+
+    // Sanity effects
+    if(G.player)drawSanityEffects(ctx);
+
+    // Hiding overlay
+    if(G.player&&G.player.isHiding){
+      ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,G.cw,G.ch);
+      ctx.fillStyle='#555';ctx.font='14px monospace';ctx.textAlign='center';
+      ctx.fillText(isMobile?'[ 躲 藏 中 — 点击交互按钮离开 ]':'[ 躲 藏 中 — 按 E 离 开 ]',G.cw/2,G.ch/2);
+      ctx.textAlign='left';
+    }
+  }
+}
+
+// ---- KEY BINDINGS ----
+document.addEventListener('keydown',e=>{
+  if(e.repeat)return;
+  const k=e.key.toLowerCase();
+
+  if(k==='e'||k===' '){
+    if(G.state==='dialogue'){closeDialogue();return;}
+    if(G.state==='playing'){
+      if(G.player&&G.player.isHiding){G.player.isHiding=false;showToast('你离开了藏身处');return;}
+      interact();
+    }
+  }
+  if(k==='tab'){e.preventDefault();toggleInventory();}
+  if(k==='r'){toggleRulebook();}
+  if(k==='escape'){
+    if(G.state==='reading'){G.state='playing';renderUI();}
+    else if(G.state==='inventory'){G.state='playing';G.invSelected=-1;renderUI();}
+    else if(G.state==='rulebook'){G.state='playing';renderUI();}
+    else if(G.state==='dialogue'){closeDialogue();}
+    else if(G.state==='playing'){pauseGame();}
+    else if(G.state==='paused'){resumeGame();}
+  }
+  if(k==='f'&&G.state==='playing'&&G.player){
+    if(G.player.hasItem('I001')){
+      G.player.flashlightOn=!G.player.flashlightOn;
+      sfx('click');
+    }
+  }
+});
+
+// ---- GAME OVER EVENT ----
+bus.on('GAME_OVER',(d)=>{
+  G.deathReason=d.reason||'你死了。';
+  G.state='gameover';
+  sfx('death');
+  renderUI();
+});
+
+// ---- INITIALIZATION ----
+function init(){
+  const canvas=document.getElementById('gameCanvas');
+  G.canvas=canvas;G.ctx=canvas.getContext('2d');
+
+  function resize(){
+    const w=window.innerWidth,h=window.innerHeight;
+    // 竖屏优先：基准宽度360，根据实际宽高比动态计算
+    const isPortrait=h>w;
+    const baseW=isPortrait?360:800;
+    const baseH=isPortrait?640:600;
+    const scale=Math.min(w/baseW,h/baseH);
+    G.cw=Math.floor(w/scale);G.ch=Math.floor(h/scale);
+    canvas.width=G.cw;canvas.height=G.ch;
+    canvas.style.width=w+'px';canvas.style.height=h+'px';
+  }
+  resize();
+  window.addEventListener('resize',resize);
+  window.addEventListener('orientationchange',()=>setTimeout(resize,200));
+  setupTouch(canvas);
+
+  // Click to init audio
+  document.addEventListener('click',()=>initAudio(),{once:true});
+
+  G.state='menu';
+  renderUI();
+
+  // Main loop
+  let last=performance.now();
+  function loop(now){
+    const dt=Math.min((now-last)/1000,0.05);
+    last=now;
+    gameUpdate(dt);
+    gameDraw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
+init();
+</script>
+</body>
+</html>

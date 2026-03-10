@@ -1,0 +1,4 @@
+ID,Name,Map_File,Time_Limit,Initial_SAN,Monsters_List,Items_List,Description
+L001,沁水市第三中学,map_school.json,9000,100,M001;M002;M003,I001;I002;I003;I005,深夜返回校园寻找复习资料，需在凌晨2点前逃离。
+L002,蓝海市极地海洋馆,map_aquarium.json,0,100,M004;M005;M006,I001;I002;I003;I006;I007,夜间设备维护，遭遇深海未知生物异变，需重启水泵并逃生。
+L003,幸福小区404号房,map_room404.json,0,100,M007;M008;M009,I004;I008;I009;I010,极小空间密室逃脱，处理房间内的污染并躲避前任房客。
