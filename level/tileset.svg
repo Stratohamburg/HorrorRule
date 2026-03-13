@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="128">
+<rect width="256" height="128" fill="#222" />
+<rect x="0" y="0" width="32" height="32" fill="#333" stroke="#000" stroke-width="1" />
+<text x="16" y="18" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">FLOOR</text>
+<rect x="32" y="0" width="32" height="32" fill="#888" stroke="#000" stroke-width="1" />
+<text x="48" y="18" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">WALL</text>
+<rect x="64" y="0" width="32" height="32" fill="#8b4513" stroke="#000" stroke-width="1" />
+<text x="80" y="18" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">DOOR</text>
+<rect x="96" y="0" width="32" height="32" fill="#8b4513" stroke="#000" stroke-width="1" />
+<text x="112" y="18" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">DOOR_</text>
+<rect x="128" y="0" width="32" height="32" fill="#696969" stroke="#000" stroke-width="1" />
+<text x="144" y="18" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">STAIR</text>
+<rect x="160" y="0" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="176" y="18" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">DESK</text>
+<rect x="192" y="0" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="208" y="18" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">CHAIR</text>
+<rect x="224" y="0" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="240" y="18" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">BED</text>
+<rect x="0" y="32" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="16" y="50" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">TOILE</text>
+<rect x="32" y="32" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="48" y="50" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">SINK</text>
+<rect x="64" y="32" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="80" y="50" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">SHELF</text>
+<rect x="96" y="32" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="112" y="50" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">LOCKE</text>
+<rect x="128" y="32" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="144" y="50" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">WINDO</text>
+<rect x="160" y="32" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="176" y="50" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">SOFA</text>
+<rect x="192" y="32" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="208" y="50" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">TV</text>
+<rect x="224" y="32" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="240" y="50" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">FRIDG</text>
+<rect x="0" y="64" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="16" y="82" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">STOVE</text>
+<rect x="32" y="64" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="48" y="82" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">TABLE</text>
+<rect x="64" y="64" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="80" y="82" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">PHONE</text>
+<rect x="96" y="64" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="112" y="82" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">MIRRO</text>
+<rect x="128" y="64" width="32" height="32" fill="#1e90ff" stroke="#000" stroke-width="1" />
+<text x="144" y="82" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">WATER</text>
+<rect x="160" y="64" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="176" y="82" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">GLASS</text>
+<rect x="192" y="64" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="208" y="82" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">TANK</text>
+<rect x="224" y="64" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="240" y="82" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">PIPE</text>
+<rect x="0" y="96" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="16" y="114" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">SWITC</text>
+<rect x="32" y="96" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="48" y="114" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">NOTE</text>
+<rect x="64" y="96" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="80" y="114" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">LIGHT</text>
+<rect x="96" y="96" width="32" height="32" fill="#8b4513" stroke="#000" stroke-width="1" />
+<text x="112" y="114" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">EXIT</text>
+<rect x="128" y="96" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="144" y="114" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">CURTA</text>
+<rect x="160" y="96" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="176" y="114" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">BALCO</text>
+<rect x="192" y="96" width="32" height="32" fill="#555" stroke="#000" stroke-width="1" />
+<text x="208" y="114" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">CARPE</text>
+<rect x="224" y="96" width="32" height="32" fill="#8b0000" stroke="#000" stroke-width="1" />
+<text x="240" y="114" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle" dominant-baseline="middle">BLOOD</text>
+</svg>

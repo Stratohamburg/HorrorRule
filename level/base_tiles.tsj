@@ -1,0 +1,145 @@
+{
+  "columns": 8,
+  "image": "tileset.svg",
+  "imageheight": 128,
+  "imagewidth": 256,
+  "margin": 0,
+  "name": "base_tiles",
+  "spacing": 0,
+  "tilecount": 32,
+  "tiledversion": "1.10.2",
+  "tileheight": 32,
+  "tilewidth": 32,
+  "type": "tileset",
+  "version": "1.10",
+  "tiles": [
+    {
+      "id": 0,
+      "type": "FLOOR"
+    },
+    {
+      "id": 1,
+      "type": "WALL"
+    },
+    {
+      "id": 2,
+      "type": "DOOR"
+    },
+    {
+      "id": 3,
+      "type": "DOOR_LOCKED"
+    },
+    {
+      "id": 4,
+      "type": "STAIRS"
+    },
+    {
+      "id": 5,
+      "type": "DESK"
+    },
+    {
+      "id": 6,
+      "type": "CHAIR"
+    },
+    {
+      "id": 7,
+      "type": "BED"
+    },
+    {
+      "id": 8,
+      "type": "TOILET"
+    },
+    {
+      "id": 9,
+      "type": "SINK"
+    },
+    {
+      "id": 10,
+      "type": "SHELF"
+    },
+    {
+      "id": 11,
+      "type": "LOCKER"
+    },
+    {
+      "id": 12,
+      "type": "WINDOW"
+    },
+    {
+      "id": 13,
+      "type": "SOFA"
+    },
+    {
+      "id": 14,
+      "type": "TV"
+    },
+    {
+      "id": 15,
+      "type": "FRIDGE"
+    },
+    {
+      "id": 16,
+      "type": "STOVE"
+    },
+    {
+      "id": 17,
+      "type": "TABLE"
+    },
+    {
+      "id": 18,
+      "type": "PHONE"
+    },
+    {
+      "id": 19,
+      "type": "MIRROR"
+    },
+    {
+      "id": 20,
+      "type": "WATER"
+    },
+    {
+      "id": 21,
+      "type": "GLASS"
+    },
+    {
+      "id": 22,
+      "type": "TANK"
+    },
+    {
+      "id": 23,
+      "type": "PIPE"
+    },
+    {
+      "id": 24,
+      "type": "SWITCH"
+    },
+    {
+      "id": 25,
+      "type": "NOTE"
+    },
+    {
+      "id": 26,
+      "type": "LIGHT"
+    },
+    {
+      "id": 27,
+      "type": "EXIT"
+    },
+    {
+      "id": 28,
+      "type": "CURTAIN"
+    },
+    {
+      "id": 29,
+      "type": "BALCONY"
+    },
+    {
+      "id": 30,
+      "type": "CARPET"
+    },
+    {
+      "id": 31,
+      "type": "BLOOD"
+    }
+  ]
+}
